@@ -237,13 +237,16 @@ async function runRecognition() {
       return { building, dist };
     }).sort((a, b) => a.dist - b.dist);
 
-    let selectedBuilding = scoredBuildings.length > 0 ? scoredBuildings[0].building : MOCK_BUILDINGS[0];
+    const MAX_DISTANCE_METERS = 3000;
+    let selectedBuilding = scoredBuildings.length > 0 && scoredBuildings[0].dist <= MAX_DISTANCE_METERS
+      ? scoredBuildings[0].building
+      : MOCK_BUILDINGS[0];
 
     // 2. Safeguard Check: If GPS places you tightly between PNR and Seymour Centre,
     // let's do a quick structural sanity check on the photo/context to ensure absolute accuracy.
     if (state.photoDataURL && scoredBuildings.length > 1) {
       const topTwoIds = [scoredBuildings[0].building.id, scoredBuildings[1].building.id];
-      
+
       // If the close candidates involve PNR and Seymour Centre:
       if (topTwoIds.includes("pnr_hub") && topTwoIds.includes("seymour_centre")) {
         // If user is further north/west toward the engineering hub, force PNR.
@@ -255,10 +258,10 @@ async function runRecognition() {
     }
 
     state.building = selectedBuilding;
-    state.comments = selectedBuilding.comments.map((c, idx) => ({ 
-      id: "c" + idx + "_" + Date.now(), 
-      ...c, 
-      photo: null 
+    state.comments = selectedBuilding.comments.map((c, idx) => ({
+      id: "c" + idx + "_" + Date.now(),
+      ...c,
+      photo: null
     }));
     state.selectedCommentId = null;
     state.era = "present";
@@ -267,7 +270,7 @@ async function runRecognition() {
     showScreen("screen-result");
 
   } catch (err) {
-    console.warn("Geolocation failed:", err.message);
+    console.warn("Geolocation failed or was denied:", err.message);
     $("loading-text").textContent = "GPS unavailable — loading default location…";
     setTimeout(() => {
       const pick = MOCK_BUILDINGS[0];
