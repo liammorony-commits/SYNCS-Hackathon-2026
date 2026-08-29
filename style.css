@@ -508,6 +508,22 @@ body{
   letter-spacing:0.3px;
   color:rgba(245,245,245,0.55);
   pointer-events:none;
+  z-index:7;
+}
+.stage.is-past .stage-hint{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);}
+.btn-enable-motion{
+  position:absolute;
+  left:50%;bottom:25px;
+  transform:translateX(-50%);
+  z-index:7;
+  border:1px solid rgba(255,255,255,.7);
+  border-radius:14px;
+  padding:5px 10px;
+  background:rgba(0,0,0,.58);
+  color:#fff;
+  font:700 9px var(--body);
+  white-space:nowrap;
+  cursor:pointer;
 }
 
 .spotlight-comment{

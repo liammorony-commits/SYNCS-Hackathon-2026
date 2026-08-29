@@ -227,6 +227,7 @@ let panoramaMaxY = 0;
 let panoramaBaseAlpha = null;
 let panoramaBaseBeta = null;
 let panoramaOrientationAttached = false;
+let panoramaOrientationEventNames = [];
 const canvasDrag = { active: false, moved: false, startX: 0, startY: 0, lastX: 0, lastY: 0 };
 
 function isQuadranglePast(){
@@ -270,11 +271,8 @@ function setPanoramaOffset(x, y = panoramaOffsetY){
   updatePanoramaTransform();
 }
 
-function onDeviceOrientation(e){
-  if(e.alpha == null) return;
-  if(panoramaBaseAlpha === null) panoramaBaseAlpha = e.alpha;
-  if(panoramaBaseBeta === null && e.beta != null) panoramaBaseBeta = e.beta;
-  let delta = e.alpha - panoramaBaseAlpha;
+function panoramaRatiosForOrientation(alpha, beta, baseAlpha, baseBeta){
+  let delta = alpha - baseAlpha;
   if(delta > 180) delta -= 360;
   if(delta < -180) delta += 360;
   // DeviceOrientationEvent.alpha increases turning counter-clockwise (i.e.
@@ -283,32 +281,63 @@ function onDeviceOrientation(e){
   const span = PANORAMA_ORIENTATION_HALF_RANGE_DEG * 2;
   const xRatio = Math.min(Math.max((-delta + PANORAMA_ORIENTATION_HALF_RANGE_DEG) / span, 0), 1);
   let yRatio = 0.5;
-  if(e.beta != null && panoramaBaseBeta !== null){
-    const tilt = e.beta - panoramaBaseBeta;
+  if(beta != null && baseBeta !== null){
+    const tilt = beta - baseBeta;
     yRatio = Math.min(Math.max((tilt + PANORAMA_TILT_HALF_RANGE_DEG) / (PANORAMA_TILT_HALF_RANGE_DEG * 2), 0), 1);
   }
+  return { xRatio, yRatio };
+}
+
+function onDeviceOrientation(e){
+  if(e.alpha == null) return;
+  if(panoramaBaseAlpha === null) panoramaBaseAlpha = e.alpha;
+  if(panoramaBaseBeta === null && e.beta != null) panoramaBaseBeta = e.beta;
+  const { xRatio, yRatio } = panoramaRatiosForOrientation(e.alpha, e.beta, panoramaBaseAlpha, panoramaBaseBeta);
   setPanoramaOffset(xRatio * panoramaMaxX, yRatio * panoramaMaxY);
 }
 
 async function enablePanoramaOrientation(){
-  if(panoramaOrientationAttached || typeof DeviceOrientationEvent === "undefined") return;
-  if(typeof DeviceOrientationEvent.requestPermission === "function"){
+  const motionButton = $("btn-enable-motion");
+  const OrientationEvent = window.DeviceOrientationEvent;
+  if(panoramaOrientationAttached){
+    if(motionButton) motionButton.classList.add("hidden");
+    return true;
+  }
+  if(typeof OrientationEvent === "undefined") return false;
+  if(typeof OrientationEvent.requestPermission === "function"){
+    if(navigator.userActivation && !navigator.userActivation.isActive){
+      if(motionButton) motionButton.classList.remove("hidden");
+      return false;
+    }
     try{
-      const result = await DeviceOrientationEvent.requestPermission();
-      if(result !== "granted") return;
-    }catch(e){ return; }
+      const result = await OrientationEvent.requestPermission();
+      if(result !== "granted"){
+        if(motionButton) motionButton.classList.remove("hidden");
+        return false;
+      }
+    }catch(e){
+      if(motionButton) motionButton.classList.remove("hidden");
+      return false;
+    }
   }
   panoramaBaseAlpha = null;
   panoramaBaseBeta = null;
-  window.addEventListener("deviceorientation", onDeviceOrientation);
+  panoramaOrientationEventNames = ["deviceorientation"];
+  if("ondeviceorientationabsolute" in window) panoramaOrientationEventNames.push("deviceorientationabsolute");
+  panoramaOrientationEventNames.forEach(name=>window.addEventListener(name, onDeviceOrientation));
   panoramaOrientationAttached = true;
+  if(motionButton) motionButton.classList.add("hidden");
+  return true;
 }
 
 function disablePanoramaOrientation(){
   if(panoramaOrientationAttached){
-    window.removeEventListener("deviceorientation", onDeviceOrientation);
+    panoramaOrientationEventNames.forEach(name=>window.removeEventListener(name, onDeviceOrientation));
+    panoramaOrientationEventNames = [];
     panoramaOrientationAttached = false;
   }
+  const motionButton = $("btn-enable-motion");
+  if(motionButton) motionButton.classList.add("hidden");
 }
 
 function activatePanorama(){
@@ -321,7 +350,7 @@ function activatePanorama(){
   updatePanoramaTransform();
   enablePanoramaOrientation();
   const hint = $("stage-hint");
-  if(hint) hint.textContent = "drag in any direction or turn your phone to look around the Past";
+  if(hint) hint.textContent = "drag or turn your phone to look around the Past";
 }
 
 function deactivatePanorama(){
@@ -949,6 +978,13 @@ function swipeTargetForGesture(currentEra, dx, dy, elapsedMs){
   if(dx > 0 && currentEra === "past") return "present";
   return null;
 }
+
+$("btn-enable-motion").addEventListener("click", async e=>{
+  e.stopPropagation();
+  if(!isQuadranglePast()) return;
+  const enabled = await enablePanoramaOrientation();
+  showToast(enabled ? "Phone movement enabled" : "Phone movement permission was not enabled");
+});
 
 (function(){
   let gesture=null;
