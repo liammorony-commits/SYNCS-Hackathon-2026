@@ -1,14 +1,14 @@
 /* ============================================================
-   UNDERTOW — prototype
-   Mock "recognition" + comment data stand in for a real vision
-   API + backend. Swap MOCK_BUILDINGS / recognizeBuilding() for
-   real calls when ready (see README).
+   UNDERTOW — prototype (Method 2: Pure Geolocation)
    ============================================================ */
 
 const MOCK_BUILDINGS = [
   {
+    id: "kestrel",
     name: "The Kestrel Building",
     meta: "1974 · civic / brutalist",
+    lat: -33.8688,
+    lng: 151.2093,
     history: "Poured in 1974 as the city's records office, the raw concrete facade was controversial from day one — locals called it \"the bunker.\" It sat half-empty through the '90s before reopening as mixed-use studios in 2011.",
     comments: [
       {text:"I've cut through this courtyard every morning for six years. Never once looked up until today.", activity:"wander", likes:41, era:"present", author:"marlo_k"},
@@ -21,8 +21,11 @@ const MOCK_BUILDINGS = [
     ]
   },
   {
+    id: "aldergate",
     name: "12 Aldergate Row",
     meta: "1891 · victorian terrace, corner unit",
+    lat: -33.8691,
+    lng: 151.2096,
     history: "Built as a draper's shop with living quarters above. The bay window survived a 1953 fire that gutted the interior. Since 2016 it's housed a small bakery on the ground floor.",
     comments: [
       {text:"The smell of bread from that corner gets me every single time. Best part of the commute.", activity:"wander", likes:54, era:"present", author:"priya.s"},
@@ -34,8 +37,11 @@ const MOCK_BUILDINGS = [
     ]
   },
   {
+    id: "millbrook",
     name: "Millbrook Warehouse No. 3",
     meta: "1912 · converted industrial loft",
+    lat: -33.8705,
+    lng: 151.2110,
     history: "One of three cotton warehouses on the old millrace, decommissioned in 1968. Stood derelict for two decades before a 1994 conversion split it into artist studios and, later, apartments.",
     comments: [
       {text:"Moved into a studio here in '96. Rent was nothing and the light was everything.", activity:"work", likes:58, era:"past", author:"g.abara"},
@@ -68,6 +74,35 @@ let canvas, ctx, rafId;
 
 const $ = (id) => document.getElementById(id);
 
+/* ---------------- GEOLOCATION HELPERS ---------------- */
+function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; 
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLon = (lon2 - lon1) * rad;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function getCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by your browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 0
+    });
+  });
+}
+
 /* ---------------- CAMERA ---------------- */
 async function startCamera(){
   const errEl = $("camera-error");
@@ -99,8 +134,6 @@ $("btn-shutter").addEventListener("click", ()=>{
   const c = $("capture-canvas");
   c.width = video.videoWidth; c.height = video.videoHeight;
   c.getContext("2d").drawImage(video,0,0);
-  // keep the stream alive — this snapshot is only used to identify the
-  // building, the result screen shows the live feed, not this still frame.
   onPhotoReady(c.toDataURL("image/jpeg", 0.9), true);
 });
 
@@ -121,23 +154,54 @@ function onPhotoReady(dataURL, isLive){
   runRecognition();
 }
 
-/* ---------------- MOCK RECOGNITION ---------------- */
-function runRecognition(){
-  const lines = ["reading the facade…","cross-referencing municipal records…","listening for what people said here…"];
-  let i=0;
-  $("loading-text").textContent = lines[0];
-  const interval = setInterval(()=>{ i=(i+1)%lines.length; $("loading-text").textContent = lines[i]; }, 550);
+/* ---------------- RECOGNITION (GEOLOCATION) ---------------- */
+async function runRecognition() {
+  $("loading-text").textContent = "checking your location…";
 
-  setTimeout(()=>{
-    clearInterval(interval);
-    const pick = MOCK_BUILDINGS[Math.floor(Math.random()*MOCK_BUILDINGS.length)];
-    state.building = pick;
-    state.comments = pick.comments.map((c,idx)=>({ id:"c"+idx+"_"+Date.now(), ...c, photo:null }));
+  try {
+    const position = await getCurrentPosition();
+    const userLat = position.coords.latitude;
+    const userLng = position.coords.longitude;
+
+    let closestBuilding = null;
+    let shortestDistance = Infinity;
+
+    MOCK_BUILDINGS.forEach(building => {
+      if (building.lat == null || building.lng == null) return;
+      const dist = getDistanceInMeters(userLat, userLng, building.lat, building.lng);
+      if (dist < shortestDistance) {
+        shortestDistance = dist;
+        closestBuilding = building;
+      }
+    });
+
+    const MAX_DISTANCE_METERS = 3000;
+    if (!closestBuilding || shortestDistance > MAX_DISTANCE_METERS) {
+      console.warn(`No recognized building within range. Defaulting to first building.`);
+      closestBuilding = MOCK_BUILDINGS[0];
+    }
+
+    state.building = closestBuilding;
+    state.comments = closestBuilding.comments.map((c, idx) => ({ id: "c" + idx + "_" + Date.now(), ...c, photo: null }));
     state.selectedCommentId = null;
     state.era = "present";
+
     renderResult();
     showScreen("screen-result");
-  }, 1650);
+
+  } catch (err) {
+    console.warn("Geolocation failed or was denied:", err.message);
+    $("loading-text").textContent = "GPS disabled — picking demo location…";
+    setTimeout(() => {
+      const pick = MOCK_BUILDINGS[Math.floor(Math.random() * MOCK_BUILDINGS.length)];
+      state.building = pick;
+      state.comments = pick.comments.map((c, idx) => ({ id: "c" + idx + "_" + Date.now(), ...c, photo: null }));
+      state.selectedCommentId = null;
+      state.era = "present";
+      renderResult();
+      showScreen("screen-result");
+    }, 1000);
+  }
 }
 
 /* ---------------- SCREEN NAV ---------------- */
@@ -168,6 +232,7 @@ function renderResult(){
   const stageVideo = $("stage-video");
   const stagePhoto = $("stage-photo");
   const liveBadge = $("live-badge");
+  
   if(state.isLive && state.stream){
     stageVideo.srcObject = state.stream;
     stageVideo.classList.remove("hidden");
@@ -202,7 +267,6 @@ document.querySelectorAll(".era-btn").forEach(btn=>{
   btn.addEventListener("click", ()=> setEra(btn.dataset.era));
 });
 
-// swipe support on stage
 (function(){
   let startX=null;
   const stage = $("stage");
@@ -301,7 +365,7 @@ function buildSilhouettes(){
       partnerIdx: null
     };
   });
-  // pair up "meet" behaviors
+  
   const meets = silhouettes.map((s,idx)=>({s,idx})).filter(o=>o.s.activity==="meet");
   for(let i=0;i<meets.length-1;i+=2){
     meets[i].s.partnerIdx = meets[i+1].idx;
@@ -354,7 +418,7 @@ function stepSilhouette(s, t){
       break;
     }
     case "work": {
-      s.x += Math.sin(t/180 + s.phase)*0.35; // small twitch, stays put
+      s.x += Math.sin(t/180 + s.phase)*0.35;
       break;
     }
     case "watch": {
@@ -389,19 +453,16 @@ function drawSilhouette(s, t, highlighted){
   const headY = shY - 8;
   const x = s.x;
 
-  // head
   ctx.beginPath();
   ctx.arc(x, headY, 5.5, 0, Math.PI*2);
   ctx.fill();
 
-  // torso
   ctx.beginPath();
   ctx.moveTo(x, headY+5);
   ctx.lineTo(x, hipY);
   ctx.stroke();
 
   if(s.activity === "sit"){
-    // seated: bent legs, hands resting on knees
     ctx.beginPath();
     ctx.moveTo(x, hipY); ctx.lineTo(x-9, hipY+3); ctx.lineTo(x-9, footY);
     ctx.moveTo(x, hipY); ctx.lineTo(x+9, hipY+3); ctx.lineTo(x+9, footY);
@@ -411,7 +472,6 @@ function drawSilhouette(s, t, highlighted){
     ctx.moveTo(x, shY); ctx.lineTo(x+7, hipY+2);
     ctx.stroke();
   } else if(s.activity === "work"){
-    // standing, arms forward (typing/handling something)
     ctx.beginPath();
     ctx.moveTo(x, footY-16); ctx.lineTo(x-3, footY);
     ctx.moveTo(x, footY-16); ctx.lineTo(x+3, footY);
@@ -421,12 +481,10 @@ function drawSilhouette(s, t, highlighted){
     ctx.moveTo(x, shY); ctx.lineTo(x+6, shY+9);
     ctx.stroke();
   } else {
-    // standing / walking legs
     ctx.beginPath();
     ctx.moveTo(x, hipY); ctx.lineTo(x-4-legSwing, footY);
     ctx.moveTo(x, hipY); ctx.lineTo(x+4+legSwing, footY);
     ctx.stroke();
-    // arms
     ctx.beginPath();
     ctx.moveTo(x, shY); ctx.lineTo(x-6-armSwing*0.6, shY+11);
     ctx.moveTo(x, shY); ctx.lineTo(x+6+armSwing*0.6, shY+11);
