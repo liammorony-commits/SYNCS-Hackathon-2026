@@ -80,6 +80,9 @@
     <div class="stage" id="stage">
       <video id="stage-video" class="stage-photo hidden" autoplay playsinline muted></video>
       <img id="stage-photo" class="stage-photo" alt="building photo">
+      <div id="past-panorama" class="past-panorama hidden">
+        <img id="past-panorama-img" src="quadrangle-past-panorama.jpg" alt="historical view of the Quadrangle" draggable="false">
+      </div>
       <div id="live-badge" class="live-badge hidden"><span class="live-dot"></span>live</div>
       <div id="stage-tint" class="stage-tint"></div>
       <canvas id="silhouette-canvas"></canvas>
@@ -88,7 +91,7 @@
         <p id="spotlight-text"></p>
         <span class="spotlight-meta" id="spotlight-meta"></span>
       </div>
-      <p class="stage-hint">tap a figure to read what they said · swipe for past/present</p>
+      <p class="stage-hint" id="stage-hint">tap a figure to read what they said · swipe for past/present</p>
     </div>
 
     <div class="comments-section">

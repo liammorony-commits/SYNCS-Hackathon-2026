@@ -142,6 +142,96 @@ let canvas, ctx, rafId;
 
 const $ = (id) => document.getElementById(id);
 
+/* ---------------- PAST PANORAMA (Quadrangle only) ---------------- */
+const PANORAMA_BUILDING_ID = "quadrangle";
+const PANORAMA_IMG_WIDTH_RATIO = 2.2; // must match .past-panorama img width in style.css
+const PANORAMA_ORIENTATION_HALF_RANGE_DEG = 60; // turning 60° either way pans to the edge
+
+let panoramaOffset = 0;
+let panoramaMax = 0;
+let panoramaBaseAlpha = null;
+let panoramaOrientationAttached = false;
+const canvasDrag = { active: false, moved: false, startX: 0, lastX: 0 };
+
+function isQuadranglePast(){
+  return state.era === "past" && !!state.building && state.building.id === PANORAMA_BUILDING_ID;
+}
+
+function updatePanoramaTransform(){
+  const img = $("past-panorama-img");
+  if(img) img.style.transform = `translateX(${-panoramaOffset}px)`;
+}
+
+function recalcPanoramaBounds(){
+  const container = $("past-panorama");
+  if(!container) return;
+  const containerWidth = container.clientWidth || 1;
+  panoramaMax = Math.max(0, containerWidth * (PANORAMA_IMG_WIDTH_RATIO - 1));
+  panoramaOffset = Math.min(Math.max(panoramaOffset, 0), panoramaMax);
+  updatePanoramaTransform();
+}
+
+function setPanoramaOffset(px){
+  panoramaOffset = Math.min(Math.max(px, 0), panoramaMax);
+  updatePanoramaTransform();
+}
+
+function onDeviceOrientation(e){
+  if(e.alpha == null || !panoramaMax) return;
+  if(panoramaBaseAlpha === null) panoramaBaseAlpha = e.alpha;
+  let delta = e.alpha - panoramaBaseAlpha;
+  if(delta > 180) delta -= 360;
+  if(delta < -180) delta += 360;
+  const span = PANORAMA_ORIENTATION_HALF_RANGE_DEG * 2;
+  const ratio = Math.min(Math.max((delta + PANORAMA_ORIENTATION_HALF_RANGE_DEG) / span, 0), 1);
+  setPanoramaOffset(ratio * panoramaMax);
+}
+
+async function enablePanoramaOrientation(){
+  if(panoramaOrientationAttached || typeof DeviceOrientationEvent === "undefined") return;
+  if(typeof DeviceOrientationEvent.requestPermission === "function"){
+    try{
+      const result = await DeviceOrientationEvent.requestPermission();
+      if(result !== "granted") return;
+    }catch(e){ return; }
+  }
+  panoramaBaseAlpha = null;
+  window.addEventListener("deviceorientation", onDeviceOrientation);
+  panoramaOrientationAttached = true;
+}
+
+function disablePanoramaOrientation(){
+  if(panoramaOrientationAttached){
+    window.removeEventListener("deviceorientation", onDeviceOrientation);
+    panoramaOrientationAttached = false;
+  }
+}
+
+function activatePanorama(){
+  const container = $("past-panorama");
+  if(!container) return;
+  container.classList.remove("hidden");
+  recalcPanoramaBounds();
+  panoramaOffset = panoramaMax / 2;
+  updatePanoramaTransform();
+  enablePanoramaOrientation();
+  const hint = $("stage-hint");
+  if(hint) hint.textContent = "drag or turn your phone to look around the past";
+}
+
+function deactivatePanorama(){
+  const container = $("past-panorama");
+  if(container) container.classList.add("hidden");
+  disablePanoramaOrientation();
+  const hint = $("stage-hint");
+  if(hint) hint.textContent = "tap a figure to read what they said · swipe for past/present";
+}
+
+function syncPastPanorama(){
+  if(isQuadranglePast()) activatePanorama();
+  else deactivatePanorama();
+}
+
 /* ---------------- GEOLOCATION HELPERS ---------------- */
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371e3; 
@@ -174,6 +264,7 @@ function getCurrentPosition() {
 /* ---------------- PHOTO RECOGNITION (backend vision call) ---------------- */
 const API_BASE = window.UNDERTOW_API_BASE || "http://localhost:4000";
 const PHOTO_CONFIDENCE_THRESHOLD = 0.6;
+const AMBIGUITY_MARGIN_METERS = 100;
 
 async function identifyBuildingFromPhoto(photoDataURL) {
   if (!photoDataURL) return null;
@@ -252,12 +343,23 @@ async function runRecognition() {
   // Kick off photo-based identification in parallel with GPS — it's the slower call.
   const photoResultPromise = identifyBuildingFromPhoto(state.photoDataURL);
 
-  function applyPhotoOverride(selectedBuilding, photoResult) {
-    if (photoResult && photoResult.confidence >= PHOTO_CONFIDENCE_THRESHOLD) {
-      const matched = MOCK_BUILDINGS.find(b => b.id === photoResult.id);
-      if (matched) return matched;
+  function applyPhotoOverride(selectedBuilding, photoResult, scoredBuildings) {
+    if (!photoResult || photoResult.confidence < PHOTO_CONFIDENCE_THRESHOLD) return selectedBuilding;
+    const matched = MOCK_BUILDINGS.find(b => b.id === photoResult.id);
+    if (!matched) return selectedBuilding;
+
+    // Sanity check: only trust the photo over GPS if the guessed building is
+    // roughly as close as the nearest GPS candidate. Otherwise a confident but
+    // wrong visual guess (e.g. mixing up two similarly-styled buildings) could
+    // override a GPS reading that already pinpointed the actual nearest building.
+    if (scoredBuildings && scoredBuildings.length > 0) {
+      const nearestDist = scoredBuildings[0].dist;
+      const matchedEntry = scoredBuildings.find(s => s.building.id === matched.id);
+      const matchedDist = matchedEntry ? matchedEntry.dist : Infinity;
+      if (matchedDist - nearestDist > AMBIGUITY_MARGIN_METERS) return selectedBuilding;
     }
-    return selectedBuilding;
+
+    return matched;
   }
 
   function finishWith(building) {
@@ -304,9 +406,9 @@ async function runRecognition() {
       }
     }
 
-    // 3. The photo itself is the strongest signal — prefer it over GPS when confident.
+    // 3. The photo is a strong signal, but only when GPS doesn't clearly disagree.
     const photoResult = await photoResultPromise;
-    selectedBuilding = applyPhotoOverride(selectedBuilding, photoResult);
+    selectedBuilding = applyPhotoOverride(selectedBuilding, photoResult, scoredBuildings);
 
     finishWith(selectedBuilding);
 
@@ -330,6 +432,7 @@ $("btn-back").addEventListener("click", ()=>{
   cancelAnimationFrame(rafId);
   rafId = null;
   stopCamera();
+  deactivatePanorama();
   $("stage-video").srcObject = null;
   showScreen("screen-capture");
 });
@@ -376,6 +479,7 @@ function applyEraUI(){
   });
   document.documentElement.style.setProperty("--accent", state.era==="past" ? "var(--past)" : "var(--present)");
   document.documentElement.style.setProperty("--accent-bg", state.era==="past" ? "var(--past-bg)" : "var(--present-bg)");
+  syncPastPanorama();
 }
 
 document.querySelectorAll(".era-btn").forEach(btn=>{
@@ -388,6 +492,7 @@ document.querySelectorAll(".era-btn").forEach(btn=>{
   stage.addEventListener("touchstart", e=> startX = e.touches[0].clientX, {passive:true});
   stage.addEventListener("touchend", e=>{
     if(startX===null) return;
+    if(isQuadranglePast()){ startX = null; return; } // panorama drag owns touch here
     const dx = e.changedTouches[0].clientX - startX;
     if(Math.abs(dx) > 50) setEra(dx < 0 ? "past" : "present");
     startX = null;
@@ -496,7 +601,12 @@ function resizeCanvas(){
   canvas.height = rect.height;
   ctx = canvas.getContext("2d");
 }
-window.addEventListener("resize", ()=>{ if($("screen-result").classList.contains("active")){ resizeCanvas(); } });
+window.addEventListener("resize", ()=>{
+  if($("screen-result").classList.contains("active")){
+    resizeCanvas();
+    if(isQuadranglePast()) recalcPanoramaBounds();
+  }
+});
 
 function stepSilhouette(s, t){
   const W = canvas.width, H = canvas.height;
@@ -622,7 +732,8 @@ function animate(){
 }
 
 canvas = $("silhouette-canvas");
-canvas.addEventListener("click", (e)=>{
+
+function handleCanvasTap(e){
   const rect = canvas.getBoundingClientRect();
   const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
   let closest=null, closestD=9999;
@@ -631,7 +742,26 @@ canvas.addEventListener("click", (e)=>{
     if(d < 26 && d < closestD){ closest = s; closestD = d; }
   });
   if(closest) selectComment(closest.commentId, true);
+}
+
+canvas.addEventListener("pointerdown", (e)=>{
+  canvasDrag.active = true;
+  canvasDrag.moved = false;
+  canvasDrag.startX = e.clientX;
+  canvasDrag.lastX = e.clientX;
 });
+canvas.addEventListener("pointermove", (e)=>{
+  if(!canvasDrag.active) return;
+  const dx = e.clientX - canvasDrag.lastX;
+  if(Math.abs(e.clientX - canvasDrag.startX) > 6) canvasDrag.moved = true;
+  if(isQuadranglePast()) setPanoramaOffset(panoramaOffset - dx);
+  canvasDrag.lastX = e.clientX;
+});
+canvas.addEventListener("pointerup", (e)=>{
+  if(canvasDrag.active && !canvasDrag.moved) handleCanvasTap(e);
+  canvasDrag.active = false;
+});
+canvas.addEventListener("pointercancel", ()=>{ canvasDrag.active = false; });
 
 /* ---------------- ADD COMMENT MODAL ---------------- */
 $("btn-add-comment").addEventListener("click", ()=>{
