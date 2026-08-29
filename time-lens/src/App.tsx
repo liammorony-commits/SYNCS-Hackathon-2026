@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { addComment, getRecentComments } from './social/comments'
+import { sendConnectionRequest } from './social/connections'
 
 function App() {
   const [result, setResult] = useState('Not tested yet')
@@ -25,12 +26,29 @@ function App() {
     }
   }
 
+  async function testConnection() {
+    try {
+      await sendConnectionRequest(1, 'Test Requester')
+      setResult('Connection request sent successfully!')
+    } catch (error) {
+      console.error(error)
+      setResult('Connection request failed — check console.')
+    }
+  }
+
   return (
     <div style={{ padding: '40px' }}>
       <h1>Time Lens Backend Test</h1>
 
       <button onClick={testBackend}>
         Test Supabase
+      </button>
+
+      <br />
+      <br />
+
+      <button onClick={testConnection}>
+        Test Connection Request
       </button>
 
       <p>{result}</p>
