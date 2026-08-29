@@ -18,8 +18,8 @@ const MOCK_BUILDINGS = [
     id: "sit_j12",
     name: "School of IT (J12)",
     meta: "2006 · contemporary / steel & glass",
-    lat: -33.8842,
-    lng: 151.1925,
+    lat: -33.888221,
+    lng: 151.194049,
     history: "The headquarters for Computer Science at USYD, easily recognized by its metallic exterior. Its 24/7 labs are legendary for hosting hackathons and sleep-deprived coders.",
     comments: [
       {text:"Been staring at the same AutoHotkey script error for three hours.", activity:"work", likes:128, era:"present", author:"dev_danny"},
