@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Undertow — building memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14171a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Undertow">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SCREEN 1: CAPTURE ============ -->
+  <section id="screen-capture" class="screen active">
+    <header class="brand">
+      <span class="brand-mark">◍</span>
+      <div>
+        <h1>Undertow</h1>
+        <p class="tagline">what a building remembers</p>
+      </div>
+    </header>
+
+    <div class="camera-frame">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="capture-canvas" class="hidden"></canvas>
+      <div class="camera-overlay">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+      </div>
+      <p id="camera-hint" class="camera-hint">point at a building</p>
+    </div>
+
+    <div class="capture-controls">
+      <button id="btn-upload" class="btn-ghost">upload photo instead</button>
+      <button id="btn-shutter" class="btn-shutter" aria-label="take photo"><span></span></button>
+      <button id="btn-flip" class="btn-ghost" title="switch camera">⟲</button>
+    </div>
+    <input type="file" id="file-input" accept="image/*" capture="environment" class="hidden">
+    <p id="camera-error" class="camera-error hidden"></p>
+  </section>
+
+  <!-- ============ SCREEN 2: LOADING ============ -->
+  <section id="screen-loading" class="screen">
+    <div class="scanline"></div>
+    <p class="loading-text" id="loading-text">reading the facade…</p>
+  </section>
+
+  <!-- ============ SCREEN 3: RESULT ============ -->
+  <section id="screen-result" class="screen">
+
+    <header class="result-header">
+      <button id="btn-back" class="btn-icon">←</button>
+      <div class="building-id">
+        <h2 id="building-name">—</h2>
+        <p id="building-meta">—</p>
+      </div>
+      <button id="btn-history-toggle" class="btn-icon" title="history">𝓲</button>
+    </header>
+
+    <div id="history-panel" class="history-panel hidden">
+      <h3>history</h3>
+      <p id="building-history"></p>
+    </div>
+
+    <div class="era-switch">
+      <button class="era-btn active" data-era="present">present</button>
+      <div class="era-slider" id="era-slider"></div>
+      <button class="era-btn" data-era="past">past</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <video id="stage-video" class="stage-photo hidden" autoplay playsinline muted></video>
+      <img id="stage-photo" class="stage-photo" alt="building photo">
+      <div id="live-badge" class="live-badge hidden"><span class="live-dot"></span>live</div>
+      <div id="stage-tint" class="stage-tint"></div>
+      <canvas id="silhouette-canvas"></canvas>
+      <div id="spotlight-comment" class="spotlight-comment hidden">
+        <span class="spotlight-label" id="spotlight-label">most loved</span>
+        <p id="spotlight-text"></p>
+        <span class="spotlight-meta" id="spotlight-meta"></span>
+      </div>
+      <p class="stage-hint">tap a figure to read what they said · swipe for past/present</p>
+    </div>
+
+    <div class="comments-section">
+      <div class="comments-head">
+        <h3>comments <span id="comment-count">(0)</span></h3>
+        <button id="btn-add-comment" class="btn-small">+ add yours</button>
+      </div>
+      <ul id="comments-list" class="comments-list"></ul>
+    </div>
+  </section>
+
+  <!-- ============ ADD COMMENT MODAL ============ -->
+  <div id="modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <h3 id="modal-title">say something to this place</h3>
+      <label class="field-label">what did/do you do here?</label>
+      <select id="input-activity">
+        <option value="wander">wander through</option>
+        <option value="sit">sit and stay a while</option>
+        <option value="meet">meet someone here</option>
+        <option value="work">work / errands</option>
+        <option value="rush">rush past, always late</option>
+        <option value="watch">just watch the building</option>
+      </select>
+      <label class="field-label">your comment</label>
+      <textarea id="input-text" maxlength="220" placeholder="e.g. I've walked past this corner every morning for six years…"></textarea>
+      <label class="field-label">add a photo (optional)</label>
+      <input type="file" id="input-photo" accept="image/*">
+      <img id="input-photo-preview" class="hidden">
+      <div class="modal-actions">
+        <button id="btn-cancel-comment" class="btn-ghost">cancel</button>
+        <button id="btn-submit-comment" class="btn-shutter-small">post</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
