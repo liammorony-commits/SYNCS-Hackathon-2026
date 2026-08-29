@@ -480,7 +480,12 @@ function getCurrentPosition() {
 }
 
 /* ---------------- PHOTO RECOGNITION (backend vision call) ---------------- */
-const API_BASE = window.UNDERTOW_API_BASE || "http://localhost:4000";
+// Locally, the backend runs standalone on :4000. Deployed (e.g. Netlify),
+// it's the same origin via a serverless function + redirect, so "" makes
+// fetch(`${API_BASE}/api/...`) resolve as a same-origin relative path.
+const API_BASE = window.UNDERTOW_API_BASE || (
+  ["localhost", "127.0.0.1"].includes(window.location.hostname) ? "http://localhost:4000" : ""
+);
 const PHOTO_CONFIDENCE_THRESHOLD = 0.75;
 const PHOTO_ONLY_CONFIDENCE_THRESHOLD = 0.85; // stricter bar when GPS gives us no corroboration at all
 const AMBIGUITY_MARGIN_METERS = 100;
