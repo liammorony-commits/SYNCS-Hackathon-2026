@@ -1,0 +1,28 @@
+:root{
+  --bg:#050814;
+  --surface:#020617;
+  --accent:#38bdf8;
+  --muted:#9ca3af;
+  --success:#22c55e;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body,#root{height:100%;}
+body{margin:0;background:var(--bg);font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+.app{display:flex;flex-direction:column;height:100%;}
+.top-tabs{display:flex;background:#0b1020;padding:8px}
+.tab{flex:1;padding:10px;margin:0 8px;border-radius:20px;border:1px solid #1f2937;text-align:center;color:#8b9ac7;font-weight:600;cursor:pointer}
+.tab.active{background:#1f2a4d;border-color:var(--accent);color:#fff}
+.content{flex:1;padding:16px;overflow:auto}
+.bottom-bar{height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#020617;border-top:1px solid #1f2937}
+.scan-btn{width:70px;height:70px;border-radius:35px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#0f172a}
+.scan-btn.live{background:var(--success)}
+.card{padding:12px;border-radius:12px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.45);margin-bottom:8px}
+.marker-map{height:140;background:var(--surface);border:1px solid #1f2937;border-radius:12px;position:relative;margin-bottom:8px}
+.marker-dot{position:absolute;width:18px;height:18px;border-radius:9px;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center}
+.marker-dot .inner{width:8px;height:8px;border-radius:4px;background:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,0.85);display:flex;align-items:center;justify-content:center}
+.modal .panel{width:85%;max-width:480px;background:var(--surface);border:1px solid var(--accent);padding:16px;border-radius:16px}
+.input{width:100%;padding:8px;border-radius:8px;background:#0b1020;border:1px solid #1f2937;color:#e5e7eb;margin-bottom:8px}
+.history-panel{border-radius:12px;background:rgba(15,23,42,0.9);border:1px solid #1f2937;overflow:hidden}
+.sliding{transition:height .25s}
