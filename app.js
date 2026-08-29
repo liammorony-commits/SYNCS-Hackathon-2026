@@ -942,17 +942,33 @@ document.querySelectorAll(".era-btn").forEach(btn=>{
   btn.addEventListener("click", ()=> setEra(btn.dataset.era));
 });
 
+function swipeTargetForGesture(currentEra, dx, dy, elapsedMs){
+  const isDeliberateSwipe = Math.abs(dx) >= 70 && Math.abs(dx) > Math.abs(dy) * 1.25 && elapsedMs <= 700;
+  if(!isDeliberateSwipe) return null;
+  if(dx < 0 && currentEra === "present") return "past";
+  if(dx > 0 && currentEra === "past") return "present";
+  return null;
+}
+
 (function(){
-  let startX=null;
+  let gesture=null;
   const stage = $("stage");
-  stage.addEventListener("pointerdown", e=> startX = e.clientX);
-  stage.addEventListener("pointerup", e=>{
-    if(startX===null) return;
-    if(isQuadranglePast()){ startX = null; return; } // panorama drag owns the gesture here
-    const dx = e.clientX - startX;
-    if(Math.abs(dx) > 50) setEra(dx < 0 ? "past" : "present");
-    startX = null;
+  stage.addEventListener("pointerdown", e=>{
+    if((e.pointerType === "mouse" && e.button !== 0) || e.target.closest("button, a, input, textarea, select")) return;
+    gesture = { x:e.clientX, y:e.clientY, startedAt:performance.now(), pointerId:e.pointerId };
   });
+  stage.addEventListener("pointerup", e=>{
+    if(!gesture || gesture.pointerId !== e.pointerId) return;
+    const targetEra = swipeTargetForGesture(
+      state.era,
+      e.clientX - gesture.x,
+      e.clientY - gesture.y,
+      performance.now() - gesture.startedAt
+    );
+    gesture = null;
+    if(targetEra) setEra(targetEra);
+  });
+  stage.addEventListener("pointercancel", ()=>{ gesture = null; });
 })();
 
 function setEra(era){
