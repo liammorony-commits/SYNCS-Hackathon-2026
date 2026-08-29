@@ -1,25 +1,25 @@
 :root{
-  --bg:#14171a;
-  --surface:#1c2023;
-  --surface-2:#242a2e;
-  --ink:#ece7db;
-  --ink-dim:#9a9e9f;
-  --line:#33393d;
+  --bg:#16151b;
+  --surface:#201e26;
+  --surface-2:#2b2832;
+  --ink:#f4eee3;
+  --ink-dim:#a89fae;
+  --line:#3a3542;
 
-  --present:#e8a33d;
-  --present-dim:#a97a3b;
-  --present-bg:#1e1a12;
+  --present:#e2a94f;
+  --present-dim:#8a6a3c;
+  --present-bg:#241b10;
 
-  --past:#5b9ac9;
-  --past-dim:#3f6a89;
-  --past-bg:#131c24;
+  --past:#7ca6cf;
+  --past-dim:#48607e;
+  --past-bg:#151d29;
 
   --accent: var(--present);
+  --accent-dim: var(--present-dim);
   --accent-bg: var(--present-bg);
 
   --display: 'Fraunces', serif;
-  --body: 'Inter', sans-serif;
-  --mono: 'JetBrains Mono', monospace;
+  --body: 'Manrope', sans-serif;
 }
 
 *{box-sizing:border-box;}
@@ -73,7 +73,8 @@ body{
 }
 .tagline{
   margin:0;
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:11px;
   color:var(--ink-dim);
   text-transform:lowercase;
@@ -86,7 +87,7 @@ body{
   flex:1;
   min-height:360px;
   background:#000;
-  border-radius:2px;
+  border-radius:12px;
   overflow:hidden;
   display:flex;
   align-items:center;
@@ -113,7 +114,8 @@ body{
   bottom:14px;
   left:0;right:0;
   text-align:center;
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:11px;
   color:var(--ink-dim);
   letter-spacing:0.5px;
@@ -121,7 +123,7 @@ body{
 }
 .camera-error{
   color:#d9724c;
-  font-family:var(--mono);
+  font-family:var(--body);
   font-size:12px;
   text-align:center;
 }
@@ -153,7 +155,8 @@ body{
   background:none;
   border:none;
   color:var(--ink-dim);
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:12px;
   cursor:pointer;
   padding:8px;
@@ -183,7 +186,8 @@ body{
   100%{transform:translateY(60px);opacity:0.2;}
 }
 .loading-text{
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:12px;
   color:var(--ink-dim);
   letter-spacing:0.5px;
@@ -215,7 +219,8 @@ body{
 }
 .building-id p{
   margin:0;
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:11px;
   color:var(--ink-dim);
 }
@@ -225,13 +230,15 @@ body{
   padding:14px;
   background:var(--surface);
   border-left:2px solid var(--accent);
+  border-radius:0 10px 10px 0;
   font-size:13px;
   line-height:1.55;
   color:var(--ink-dim);
 }
 .history-panel h3{
   margin:0 0 6px;
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:700;
   font-size:10px;
   text-transform:uppercase;
   letter-spacing:1px;
@@ -254,7 +261,8 @@ body{
   background:none;
   border:none;
   color:var(--ink-dim);
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:700;
   font-size:12px;
   text-transform:lowercase;
   letter-spacing:0.5px;
@@ -279,7 +287,7 @@ body{
 .stage{
   position:relative;
   margin:0 16px 14px;
-  border-radius:2px;
+  border-radius:12px;
   overflow:hidden;
   aspect-ratio:4/5;
   background:#000;
@@ -330,10 +338,11 @@ body{
   background:rgba(20,23,26,0.75);
   border:1px solid var(--accent);
   color:var(--accent);
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:700;
   font-size:10px;
   text-transform:uppercase;
-  letter-spacing:0.5px;
+  letter-spacing:0.6px;
   padding:4px 9px 4px 7px;
   border-radius:12px;
 }
@@ -359,7 +368,7 @@ body{
   bottom:8px;left:0;right:0;
   text-align:center;
   margin:0;
-  font-family:var(--mono);
+  font-family:var(--body);
   font-size:9.5px;
   letter-spacing:0.3px;
   color:rgba(236,231,219,0.55);
@@ -369,15 +378,16 @@ body{
 .spotlight-comment{
   position:absolute;
   top:10px;left:10px;right:10px;
-  background:rgba(20,23,26,0.82);
+  background:rgba(20,23,26,0.86);
   backdrop-filter:blur(3px);
   border:1px solid var(--accent);
-  border-radius:3px;
+  border-radius:10px;
   padding:10px 12px;
   transition:opacity .2s ease;
 }
 .spotlight-label{
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:700;
   font-size:9px;
   text-transform:uppercase;
   letter-spacing:1px;
@@ -387,9 +397,11 @@ body{
   margin:5px 0 4px;
   font-size:13px;
   line-height:1.4;
+  font-weight:500;
 }
 .spotlight-meta{
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:10px;
   color:var(--ink-dim);
 }
@@ -403,7 +415,8 @@ body{
   margin-bottom:10px;
 }
 .comments-head h3{
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:700;
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:1px;
@@ -414,11 +427,13 @@ body{
   background:var(--surface);
   border:1px solid var(--line);
   color:var(--ink);
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:11px;
   padding:7px 12px;
   border-radius:20px;
   cursor:pointer;
+  transition:border-color .15s, color .15s;
 }
 .btn-small:hover{border-color:var(--accent);color:var(--accent);}
 
@@ -426,7 +441,7 @@ body{
 .comment-item{
   background:var(--surface);
   border:1px solid var(--line);
-  border-radius:3px;
+  border-radius:10px;
   padding:10px 12px;
   cursor:pointer;
   transition:border-color .15s;
@@ -436,7 +451,8 @@ body{
 .comment-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
 .comment-text{font-size:13px;line-height:1.45;margin:0;flex:1;}
 .comment-likes{
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:700;
   font-size:11px;
   color:var(--accent);
   white-space:nowrap;
@@ -446,7 +462,8 @@ body{
 }
 .comment-meta{
   margin-top:6px;
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:600;
   font-size:10px;
   color:var(--ink-dim);
   display:flex;
@@ -457,7 +474,7 @@ body{
   margin-top:8px;
   max-width:100%;
   max-height:140px;
-  border-radius:2px;
+  border-radius:8px;
   display:block;
   object-fit:cover;
 }
@@ -496,7 +513,8 @@ body{
   margin:0 0 8px;
 }
 .field-label{
-  font-family:var(--mono);
+  font-family:var(--body);
+  font-weight:700;
   font-size:10px;
   text-transform:uppercase;
   letter-spacing:0.5px;
@@ -507,7 +525,7 @@ body{
   background:var(--bg);
   border:1px solid var(--line);
   color:var(--ink);
-  border-radius:4px;
+  border-radius:8px;
   padding:10px;
   font-family:var(--body);
   font-size:13px;
@@ -530,7 +548,7 @@ body{
   background:var(--present);
   color:#1a1400;
   border:none;
-  font-family:var(--mono);
+  font-family:var(--body);
   font-weight:500;
   font-size:12px;
   padding:10px 20px;

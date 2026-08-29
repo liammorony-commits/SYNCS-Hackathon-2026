@@ -137,6 +137,8 @@ let state = {
   facingMode: "environment"
 };
 
+const SHOW_COMMENTS_AND_SILHOUETTES = false; // temporarily disabled
+
 let silhouettes = [];
 let canvas, ctx, rafId;
 
@@ -224,7 +226,7 @@ function deactivatePanorama(){
   if(container) container.classList.add("hidden");
   disablePanoramaOrientation();
   const hint = $("stage-hint");
-  if(hint) hint.textContent = "tap a figure to read what they said · swipe for past/present";
+  if(hint) hint.textContent = "swipe for past/present";
 }
 
 function syncPastPanorama(){
@@ -466,7 +468,7 @@ function renderResult(){
   buildSilhouettes();
   renderCommentsList();
   renderSpotlight();
-  if(!rafId) animate();
+  if(!rafId && SHOW_COMMENTS_AND_SILHOUETTES) animate();
 }
 
 function applyEraUI(){
@@ -478,6 +480,7 @@ function applyEraUI(){
     b.classList.toggle("active", b.dataset.era===state.era);
   });
   document.documentElement.style.setProperty("--accent", state.era==="past" ? "var(--past)" : "var(--present)");
+  document.documentElement.style.setProperty("--accent-dim", state.era==="past" ? "var(--past-dim)" : "var(--present-dim)");
   document.documentElement.style.setProperty("--accent-bg", state.era==="past" ? "var(--past-bg)" : "var(--present-bg)");
   syncPastPanorama();
 }
@@ -489,14 +492,14 @@ document.querySelectorAll(".era-btn").forEach(btn=>{
 (function(){
   let startX=null;
   const stage = $("stage");
-  stage.addEventListener("touchstart", e=> startX = e.touches[0].clientX, {passive:true});
-  stage.addEventListener("touchend", e=>{
+  stage.addEventListener("pointerdown", e=> startX = e.clientX);
+  stage.addEventListener("pointerup", e=>{
     if(startX===null) return;
-    if(isQuadranglePast()){ startX = null; return; } // panorama drag owns touch here
-    const dx = e.changedTouches[0].clientX - startX;
+    if(isQuadranglePast()){ startX = null; return; } // panorama drag owns the gesture here
+    const dx = e.clientX - startX;
     if(Math.abs(dx) > 50) setEra(dx < 0 ? "past" : "present");
     startX = null;
-  }, {passive:true});
+  });
 })();
 
 function setEra(era){
@@ -515,6 +518,9 @@ function eraComments(){
 }
 
 function renderCommentsList(){
+  const section = $("comments-section");
+  if(!SHOW_COMMENTS_AND_SILHOUETTES){ if(section) section.classList.add("hidden"); return; }
+  if(section) section.classList.remove("hidden");
   const list = eraComments();
   $("comment-count").textContent = "(" + list.length + ")";
   const ul = $("comments-list");
@@ -540,8 +546,9 @@ function renderCommentsList(){
 }
 
 function renderSpotlight(){
-  const list = eraComments();
   const box = $("spotlight-comment");
+  if(!SHOW_COMMENTS_AND_SILHOUETTES){ box.classList.add("hidden"); return; }
+  const list = eraComments();
   const chosen = state.selectedCommentId
     ? state.comments.find(c=>c.id===state.selectedCommentId)
     : list[0];
@@ -567,6 +574,7 @@ function escapeHTML(s){
 
 /* ---------------- SILHOUETTES ---------------- */
 function buildSilhouettes(){
+  if(!SHOW_COMMENTS_AND_SILHOUETTES){ silhouettes = []; return; }
   const list = eraComments();
   const W = $("silhouette-canvas").clientWidth || 300;
   const H = $("silhouette-canvas").clientHeight || 375;
