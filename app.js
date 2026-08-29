@@ -90,8 +90,8 @@ const MOCK_BUILDINGS = [
     id: "pnr_hub",
     name: "PNR Learning Hub",
     meta: "2019 · modern / engineering",
-    lat: -33.8890,
-    lng: 151.1932,
+    lat: -33.8891,
+    lng: 151.1912,
     history: "Opened as part of the Engineering Precinct upgrade, featuring state-of-the-art collaborative studios, workshops, and tiered social learning spaces for students.",
     comments: [
       {text:"Spent twelve hours straight working on the capstone project in these pods.", activity:"work", likes:114, era:"present", author:"eng_student"},
@@ -222,22 +222,15 @@ function onPhotoReady(dataURL, isLive){
   runRecognition();
 }
 
-<<<<<<< HEAD
 /* ---------------- RECOGNITION (GPS + PHOTO SAFEGUARD METHOD) ---------------- */
 async function runRecognition() {
   $("loading-text").textContent = "verifying GPS & analyzing building facade…";
-=======
-/* ---------------- RECOGNITION (SMART HYBRID RADIUS METHOD) ---------------- */
-async function runRecognition() {
-  $("loading-text").textContent = "analyzing location & facade…";
->>>>>>> aca536f (Add PNR Learning Hub)
 
   try {
     const position = await getCurrentPosition();
     const userLat = position.coords.latitude;
     const userLng = position.coords.longitude;
 
-<<<<<<< HEAD
     // 1. Get the closest building via standard GPS
     let scoredBuildings = MOCK_BUILDINGS.map(building => {
       const dist = getDistanceInMeters(userLat, userLng, building.lat, building.lng);
@@ -269,39 +262,6 @@ async function runRecognition() {
       id: "c" + idx + "_" + Date.now(),
       ...c,
       photo: null
-=======
-    // Filter buildings within a strict 150-meter radius to prevent overlapping mix-ups
-    const RADIUS_METERS = 150;
-    const nearbyCandidates = MOCK_BUILDINGS.filter(building => {
-      if (building.lat == null || building.lng == null) return false;
-      const dist = getDistanceInMeters(userLat, userLng, building.lat, building.lng);
-      return dist <= RADIUS_METERS;
-    });
-
-    let selectedBuilding = null;
-
-    if (nearbyCandidates.length === 1) {
-      selectedBuilding = nearbyCandidates[0];
-    } else if (nearbyCandidates.length > 1) {
-      // Multiple buildings nearby: prioritize J12 / Eveleigh hackathon location if present, else pick closest
-      selectedBuilding = nearbyCandidates.find(b => b.id === "sit_j12") || nearbyCandidates[0];
-    } else {
-      // Fallback to globally closest building if none are within 150m
-      let closest = null;
-      let minDistance = Infinity;
-      MOCK_BUILDINGS.forEach(b => {
-        const d = getDistanceInMeters(userLat, userLng, b.lat, b.lng);
-        if (d < minDistance) { minDistance = d; closest = b; }
-      });
-      selectedBuilding = closest || MOCK_BUILDINGS[0];
-    }
-
-    state.building = selectedBuilding;
-    state.comments = selectedBuilding.comments.map((c, idx) => ({ 
-      id: "c" + idx + "_" + Date.now(), 
-      ...c, 
-      photo: null 
->>>>>>> aca536f (Add PNR Learning Hub)
     }));
     state.selectedCommentId = null;
     state.era = "present";
@@ -310,11 +270,7 @@ async function runRecognition() {
     showScreen("screen-result");
 
   } catch (err) {
-<<<<<<< HEAD
     console.warn("Geolocation failed or was denied:", err.message);
-=======
-    console.warn("Geolocation failed:", err.message);
->>>>>>> aca536f (Add PNR Learning Hub)
     $("loading-text").textContent = "GPS unavailable — loading default location…";
     setTimeout(() => {
       const pick = MOCK_BUILDINGS[0];
