@@ -233,8 +233,11 @@ function onDeviceOrientation(e){
   let delta = e.alpha - panoramaBaseAlpha;
   if(delta > 180) delta -= 360;
   if(delta < -180) delta += 360;
+  // DeviceOrientationEvent.alpha increases turning counter-clockwise (i.e.
+  // turning left), but turning left should reveal the image's own left
+  // side (lower offset) — so invert delta to match that expectation.
   const span = PANORAMA_ORIENTATION_HALF_RANGE_DEG * 2;
-  const ratio = Math.min(Math.max((delta + PANORAMA_ORIENTATION_HALF_RANGE_DEG) / span, 0), 1);
+  const ratio = Math.min(Math.max((-delta + PANORAMA_ORIENTATION_HALF_RANGE_DEG) / span, 0), 1);
   setPanoramaOffset(ratio * panoramaMax);
 }
 

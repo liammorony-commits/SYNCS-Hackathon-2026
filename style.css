@@ -180,6 +180,7 @@ body{
   padding:8px;
 }
 .btn-ghost:hover{color:var(--ink);}
+#btn-flip{font-size:16px;}
 
 /* ---------- loading ---------- */
 #screen-loading{
