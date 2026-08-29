@@ -283,7 +283,9 @@ function panoramaRatiosForOrientation(alpha, beta, baseAlpha, baseBeta){
   let yRatio = 0.5;
   if(beta != null && baseBeta !== null){
     const tilt = beta - baseBeta;
-    yRatio = Math.min(Math.max((tilt + PANORAMA_TILT_HALF_RANGE_DEG) / (PANORAMA_TILT_HALF_RANGE_DEG * 2), 0), 1);
+    // Invert the device tilt so the panorama follows the direction the
+    // phone is pointing instead of moving vertically in the opposite way.
+    yRatio = Math.min(Math.max((-tilt + PANORAMA_TILT_HALF_RANGE_DEG) / (PANORAMA_TILT_HALF_RANGE_DEG * 2), 0), 1);
   }
   return { xRatio, yRatio };
 }
