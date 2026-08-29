@@ -171,6 +171,29 @@ function getCurrentPosition() {
   });
 }
 
+/* ---------------- PHOTO RECOGNITION (backend vision call) ---------------- */
+const API_BASE = window.UNDERTOW_API_BASE || "http://localhost:4000";
+const PHOTO_CONFIDENCE_THRESHOLD = 0.6;
+
+async function identifyBuildingFromPhoto(photoDataURL) {
+  if (!photoDataURL) return null;
+  try {
+    const candidates = MOCK_BUILDINGS.map(b => ({ id: b.id, name: b.name, meta: b.meta }));
+    const res = await fetch(`${API_BASE}/api/identify-building`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ imageDataURL: photoDataURL, candidates })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.identified || !data.buildingId) return null;
+    return { id: data.buildingId, confidence: data.confidence };
+  } catch (e) {
+    console.warn("Photo identification unavailable, falling back to GPS:", e.message);
+    return null;
+  }
+}
+
 /* ---------------- CAMERA ---------------- */
 async function startCamera(){
   const errEl = $("camera-error");
@@ -222,9 +245,33 @@ function onPhotoReady(dataURL, isLive){
   runRecognition();
 }
 
-/* ---------------- RECOGNITION (GPS + PHOTO SAFEGUARD METHOD) ---------------- */
+/* ---------------- RECOGNITION (PHOTO AI + GPS SAFEGUARD METHOD) ---------------- */
 async function runRecognition() {
-  $("loading-text").textContent = "verifying GPS & analyzing building facade…";
+  $("loading-text").textContent = "analyzing building facade & verifying GPS…";
+
+  // Kick off photo-based identification in parallel with GPS — it's the slower call.
+  const photoResultPromise = identifyBuildingFromPhoto(state.photoDataURL);
+
+  function applyPhotoOverride(selectedBuilding, photoResult) {
+    if (photoResult && photoResult.confidence >= PHOTO_CONFIDENCE_THRESHOLD) {
+      const matched = MOCK_BUILDINGS.find(b => b.id === photoResult.id);
+      if (matched) return matched;
+    }
+    return selectedBuilding;
+  }
+
+  function finishWith(building) {
+    state.building = building;
+    state.comments = building.comments.map((c, idx) => ({
+      id: "c" + idx + "_" + Date.now(),
+      ...c,
+      photo: null
+    }));
+    state.selectedCommentId = null;
+    state.era = "present";
+    renderResult();
+    showScreen("screen-result");
+  }
 
   try {
     const position = await getCurrentPosition();
@@ -257,30 +304,18 @@ async function runRecognition() {
       }
     }
 
-    state.building = selectedBuilding;
-    state.comments = selectedBuilding.comments.map((c, idx) => ({
-      id: "c" + idx + "_" + Date.now(),
-      ...c,
-      photo: null
-    }));
-    state.selectedCommentId = null;
-    state.era = "present";
+    // 3. The photo itself is the strongest signal — prefer it over GPS when confident.
+    const photoResult = await photoResultPromise;
+    selectedBuilding = applyPhotoOverride(selectedBuilding, photoResult);
 
-    renderResult();
-    showScreen("screen-result");
+    finishWith(selectedBuilding);
 
   } catch (err) {
     console.warn("Geolocation failed or was denied:", err.message);
-    $("loading-text").textContent = "GPS unavailable — loading default location…";
-    setTimeout(() => {
-      const pick = MOCK_BUILDINGS[0];
-      state.building = pick;
-      state.comments = pick.comments.map((c, idx) => ({ id: "c" + idx + "_" + Date.now(), ...c, photo: null }));
-      state.selectedCommentId = null;
-      state.era = "present";
-      renderResult();
-      showScreen("screen-result");
-    }, 1000);
+    $("loading-text").textContent = "GPS unavailable — analyzing photo instead…";
+    const photoResult = await photoResultPromise;
+    const pick = applyPhotoOverride(MOCK_BUILDINGS[0], photoResult);
+    setTimeout(() => finishWith(pick), 500);
   }
 }
 

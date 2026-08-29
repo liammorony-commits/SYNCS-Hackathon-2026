@@ -4,9 +4,11 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
 
@@ -213,9 +215,107 @@ app.post('/api/scan', (req, res) => {
   });
 });
 
+function parseDataURL(dataURL) {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(String(dataURL || ''));
+  if (!match) return null;
+  return { mediaType: match[1], base64: match[2] };
+}
+
+app.post('/api/identify-building', async (req, res) => {
+  const { imageDataURL, candidates } = req.body || {};
+
+  if (!ANTHROPIC_API_KEY) {
+    return res.status(501).json({
+      identified: false,
+      message: 'Photo identification is not configured (missing ANTHROPIC_API_KEY on the server).'
+    });
+  }
+
+  const image = parseDataURL(imageDataURL);
+  if (!image) {
+    return res.status(400).json({ identified: false, message: 'imageDataURL must be a base64 data URL.' });
+  }
+
+  const candidateList = Array.isArray(candidates) ? candidates : [];
+  if (candidateList.length === 0) {
+    return res.status(400).json({ identified: false, message: 'candidates must be a non-empty array.' });
+  }
+
+  const candidateDescriptions = candidateList
+    .map((c) => `- id: "${c.id}", name: "${c.name}"${c.meta ? `, details: "${c.meta}"` : ''}`)
+    .join('\n');
+
+  const prompt = `You are identifying a building on a university campus from a photo.
+Here are the only valid candidate buildings:
+${candidateDescriptions}
+
+Look at the photo and decide which candidate building it most likely shows, based on visible architecture, signage, and surroundings.
+Respond with ONLY a JSON object, no other text, in this exact shape:
+{"buildingId": "<one of the candidate ids, or null if none match>", "confidence": <number between 0 and 1>, "reason": "<one short sentence>"}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 300,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Anthropic API error:', response.status, errText);
+      return res.status(502).json({ identified: false, message: 'Photo identification service failed.' });
+    }
+
+    const data = await response.json();
+    const text = (data.content || []).map((block) => block.text || '').join('').trim();
+
+    let parsed;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+    } catch (parseErr) {
+      console.error('Could not parse model response as JSON:', text);
+      return res.status(502).json({ identified: false, message: 'Photo identification returned an unreadable response.' });
+    }
+
+    const validIds = new Set(candidateList.map((c) => c.id));
+    const buildingId = validIds.has(parsed.buildingId) ? parsed.buildingId : null;
+    const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0;
+
+    return res.json({
+      identified: Boolean(buildingId),
+      buildingId,
+      confidence,
+      reason: parsed.reason || null
+    });
+  } catch (err) {
+    console.error('Photo identification request failed:', err);
+    return res.status(502).json({ identified: false, message: 'Photo identification service unreachable.' });
+  }
+});
+
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`TimeLens backend running on http://localhost:${PORT}`);
+    if (!ANTHROPIC_API_KEY) {
+      console.warn('ANTHROPIC_API_KEY is not set — /api/identify-building will return 501 until it is configured.');
+    }
   });
 }
 
