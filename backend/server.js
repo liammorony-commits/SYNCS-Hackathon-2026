@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const path = require('path');
 const { generateQuadrangleHologramScene } = require('./hologram');
 const { findUsydLandmark } = require('./usyd-landmarks');
 const { listComments, createComment, deleteComment } = require('./comment-store');
@@ -390,6 +391,10 @@ app.get('/api/landmark-summary', (req, res) => {
 });
 
 if (require.main === module) {
+  // Keep local testing full-stack: opening localhost:4000 serves this app and
+  // makes its relative /api requests hit the same Express process.
+  app.use(express.static(path.resolve(__dirname, '..'), { dotfiles: 'ignore' }));
+
   app.listen(PORT, () => {
     console.log(`TimeLens backend running on http://localhost:${PORT}`);
     if (!ANTHROPIC_API_KEY) {

@@ -4,12 +4,17 @@
 // run directly (require.main === module), so requiring it here just
 // gives us the Express app to wrap, without starting a real server.
 const serverless = require('serverless-http');
+const { connectLambda } = require('@netlify/blobs');
 // Backend bundle revision: persistent-owned-comments-v5
 const app = require('../../backend/server');
 
 const handleRequest = serverless(app);
 
 module.exports.handler = async (event, context) => {
+  // This wrapper uses Netlify's Lambda compatibility event shape. Blobs needs
+  // the per-invocation site URL and token carried by that event.
+  connectLambda(event);
+
   // Depending on how Netlify rewrites the request, event.path may arrive
   // as the original "/api/..." path or as the function's own path
   // ("/.netlify/functions/api/..."). The Express routes below all expect

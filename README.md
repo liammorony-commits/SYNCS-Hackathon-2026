@@ -1,27 +1,25 @@
 # Undertow — building memory app (prototype)
 
-A testable front-end prototype of the concept: photograph a building, see its
+A testable full-stack prototype of the concept: photograph a building, see its
 history, browse comments sorted by likes, and watch "silhouettes" wander the
 photo based on what people said they do there. Swipe/tap between **Present**
 and **Past**.
 
-This is a static HTML/CSS/JS app — no build step, no server-side code. It's
-built so you can test the whole interaction on your laptop's webcam before
-ever touching a phone or a real backend.
+The browser app is plain HTML/CSS/JS. Its Express API persists comments to a
+local file during development and to Netlify Blobs when deployed.
 
 ## Run it locally
 
-Camera access (`getUserMedia`) requires a "secure context" — browsers block
-it on plain `file://` pages, but `localhost` counts as secure, so a trivial
-local server is enough.
+Install the locked dependencies, then start the frontend and API together:
 
 ```bash
-cd building-app
-python3 -m http.server 8000
+npm ci
+npm start
 ```
 
-Then open **http://localhost:8000** in Chrome, Firefox, or Safari and allow
-camera access when prompted. (Node users: `npx serve` works just as well.)
+Then open **http://localhost:4000** in Chrome, Firefox, or Safari and allow
+camera access when prompted. Use this command rather than a static-only server;
+comments need the `/api/comments` routes in the Express process.
 
 If you don't want to grant camera access, click **"upload photo instead"**
 on the first screen — it uses a plain file picker and works identically.
@@ -36,18 +34,19 @@ works today. The camera is the catch — mobile browsers only allow
 `getUserMedia` (camera access) on `localhost` or a genuine **https** URL,
 not on a plain `http://192.168.x.x` address on your local network. So:
 
-**Fastest path to a real https URL, no account needed:**
-1. Go to https://app.netlify.com/drop in a browser on your laptop.
-2. Drag the whole `building-app` folder onto the page.
-3. It gives you a live `https://something.netlify.app` URL in seconds.
-4. Open that URL on your phone, allow camera access, then use your
+**Recommended hosted path:**
+1. Import this GitHub repository into Netlify and deploy the `main` branch.
+2. Netlify uses `netlify.toml` to publish the frontend and route `/api/*` to
+   the bundled Express function.
+3. Open the resulting `https://something.netlify.app` URL on your phone,
+   allow camera access, then use your
    browser's menu → **"Add to Home Screen"** (or **"Install app"** on
    Android Chrome) to get the icon/full-screen experience.
 
 **Alternative if you'd rather not upload anywhere:** a tunneling tool like
 `ngrok` (https://ngrok.com) can expose your laptop's local server
-(`localhost:8000`) as a temporary https URL — run
-`ngrok http 8000` alongside your `python -m http.server 8000`, and use the
+(`localhost:4000`) as a temporary https URL — run
+`ngrok http 4000` alongside `npm start`, and use the
 `https://...ngrok-free.app` URL it prints on your phone.
 
 Without https, the app still works fine on your phone for everything
@@ -69,17 +68,15 @@ static image, since there's no live stream to show.
 
 ## What's real vs. mocked right now
 
-This prototype is fully interactive, but two things are stubbed so you can
-test the *experience* without any API keys or a backend:
+This prototype is fully interactive. Building recognition is still mocked so
+you can test the experience without an AI API key:
 
 - **Building recognition** — `runRecognition()` in `app.js` just picks one
   of three hand-written building profiles (`MOCK_BUILDINGS`) at random after
   a short fake "scanning" delay, regardless of what's in your photo.
-- **Comments** — each mock building ships with a seeded set of comments
-  (with likes counts, an activity tag, and past/present era) so sorting,
-  silhouette behavior, and the spotlight/most-liked feature all have real
-  data to work against. Anything you post through "+ add yours" is appended
-  to that same in-memory list — it won't survive a page reload.
+- **Comments** — each mock building ships with seeded comments for the initial
+  experience. New comments are saved through the backend and survive reloads.
+  Likes are stored in that browser's local storage.
 
 ## Wiring up the real thing later
 
@@ -87,10 +84,6 @@ test the *experience* without any API keys or a backend:
   `state.photoDataURL` to a Claude/vision endpoint or a landmark-recognition
   API), and replace `MOCK_BUILDINGS` lookup with a real DB fetch by
   building ID / geolocation.
-- Replace the in-memory `state.comments` array with real API calls
-  (fetch on load, POST on submit) — the render functions
-  (`renderCommentsList`, `renderSpotlight`, `buildSilhouettes`) already
-  re-run any time the comment list changes, so they don't need to change.
 - Each comment carries an `activity` field that drives its silhouette's
   movement pattern (`stepSilhouette()` in `app.js`): `wander`, `sit`,
   `meet`, `work`, `rush`, `watch`. Add more behaviors by adding a case
@@ -104,6 +97,7 @@ test the *experience* without any API keys or a backend:
 
 ```
 index.html   structure / screens
-style.css    design system (present = amber, past = cyanotype blue)
+style.css    light/dark era themes and interaction animations
 app.js       camera, mock recognition, silhouette simulation, comments
+backend/     Express API, persistent comment store, hologram and landmark data
 ```

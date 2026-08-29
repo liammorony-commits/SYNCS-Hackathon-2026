@@ -2,7 +2,17 @@ const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 
-const useNetlifyBlobs = process.env.NETLIFY === 'true' && process.env.NETLIFY_DEV !== 'true';
+function shouldUseNetlifyBlobs(environment = process.env) {
+  if (environment.COMMENTS_STORE_MODE === 'file') return false;
+  if (environment.COMMENTS_STORE_MODE === 'netlify-blobs') return true;
+
+  // NETLIFY is a build-time variable and is not guaranteed inside a Function.
+  // SITE_ID is available at Function runtime, while NETLIFY_DEV keeps local
+  // development on the file-backed store.
+  return Boolean(environment.SITE_ID) && environment.NETLIFY_DEV !== 'true';
+}
+
+const useNetlifyBlobs = shouldUseNetlifyBlobs();
 
 const storePath = process.env.COMMENTS_STORE_PATH
   ? path.resolve(process.env.COMMENTS_STORE_PATH)
@@ -108,7 +118,13 @@ async function deleteComment(buildingId, commentId, ownerKey) {
 
 function netlifyStore() {
   const { getStore } = require('@netlify/blobs');
-  return getStore({ name: 'undertow-comments', consistency: 'strong' });
+  return getStore('undertow-comments');
 }
 
-module.exports = { listComments, createComment, deleteComment, storePath };
+module.exports = {
+  listComments,
+  createComment,
+  deleteComment,
+  shouldUseNetlifyBlobs,
+  storePath
+};

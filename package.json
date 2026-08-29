@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Root package.json so Netlify Functions can resolve the wrapped Express backend's dependencies.",
   "private": true,
+  "scripts": {
+    "start": "node backend/server.js",
+    "test": "node --test backend/test-comment-store.js test-comment-likes.js"
+  },
   "dependencies": {
     "@netlify/blobs": "^11.0.2",
     "cors": "^2.8.5",

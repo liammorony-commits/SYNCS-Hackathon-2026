@@ -18,6 +18,9 @@
   --accent-dim: var(--present-dim);
   --accent-bg: var(--present-bg);
 
+  --comment-like-idle:#8c8c8c;
+  --comment-like-active:#ffffff;
+
   --display: 'Plus Jakarta Sans', sans-serif;
   --body: 'Plus Jakarta Sans', sans-serif;
 }
@@ -34,6 +37,9 @@ body.theme-light{
   --present:#111111;
   --present-dim:#555555;
   --present-bg:#ececec;
+
+  --comment-like-idle:#6b6b6b;
+  --comment-like-active:#111111;
 }
 body, .app, .modal, .history-panel, .hologram-reader-card, .btn-icon, .btn-small, .stage{
   transition: background-color .5s ease, color .5s ease, border-color .5s ease;
@@ -657,7 +663,7 @@ body{
   font-family:var(--body);
   font-weight:700;
   font-size:11px;
-  color:var(--ink-dim);
+  color:var(--comment-like-idle);
   white-space:nowrap;
   display:flex;
   align-items:center;
@@ -666,12 +672,19 @@ body{
   cursor:pointer;
   transition:color .15s, transform .15s;
 }
-.comment-likes:hover{color:var(--accent);}
+.comment-likes:hover{color:var(--comment-like-active);}
 .comment-likes:active{transform:scale(.92);}
-.comment-likes.liked{color:var(--accent);}
-body.is-past .comment-likes.liked{color:#fff;}
-.comment-likes.just-liked{animation:heart-plop .58s cubic-bezier(.2,.9,.25,1.35);}
+.comment-likes.liked{color:var(--comment-like-active);}
+.comment-likes.just-liked{
+  animation:
+    heart-plop .58s cubic-bezier(.2,.9,.25,1.35),
+    like-colour-fill .3s ease-out;
+}
 .comment-likes.just-liked span{display:inline-block;animation:like-count-up .38s cubic-bezier(.2,.8,.25,1);}
+@keyframes like-colour-fill{
+  from{color:var(--comment-like-idle);}
+  to{color:var(--comment-like-active);}
+}
 @keyframes heart-plop{
   0%{transform:scale(1) rotate(0);}
   24%{transform:scale(.72) rotate(-10deg);}

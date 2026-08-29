@@ -680,11 +680,20 @@ function commentOwnerHeaders(){
   return {"X-Comment-Owner":getCommentOwnerId()};
 }
 
+async function backendResponseError(response, fallbackMessage){
+  let message = "";
+  try{
+    const payload = await response.json();
+    if(typeof payload?.error === "string") message = payload.error.trim();
+  }catch(error){ /* A proxy or static server may return HTML instead of JSON. */ }
+  return new Error(message || `${fallbackMessage} (HTTP ${response.status})`);
+}
+
 async function fetchBackendComments(buildingId){
   const response = await fetch(`${API_BASE}/api/comments?buildingId=${encodeURIComponent(buildingId)}`, {
     headers:commentOwnerHeaders()
   });
-  if(!response.ok) throw new Error("Could not load comments");
+  if(!response.ok) throw await backendResponseError(response, "Could not load comments");
   return response.json();
 }
 
@@ -694,7 +703,7 @@ async function createBackendComment(buildingId, comment){
     headers:{"Content-Type":"application/json", ...commentOwnerHeaders()},
     body:JSON.stringify({buildingId, ...comment})
   });
-  if(!response.ok) throw new Error("Could not save comment");
+  if(!response.ok) throw await backendResponseError(response, "Could not save comment");
   return response.json();
 }
 
@@ -703,7 +712,7 @@ async function deleteBackendComment(buildingId, commentId){
     method:"DELETE",
     headers:commentOwnerHeaders()
   });
-  if(!response.ok) throw new Error("Could not delete comment");
+  if(!response.ok) throw await backendResponseError(response, "Could not delete comment");
 }
 const PHOTO_CONFIDENCE_THRESHOLD = 0.75;
 const PHOTO_ONLY_CONFIDENCE_THRESHOLD = 0.85; // stricter bar when GPS gives us no corroboration at all
@@ -1479,7 +1488,7 @@ $("btn-submit-comment").addEventListener("click", async ()=>{
       text, activity, customActivity, era:state.era, photo:pendingPhoto, ...profile
     });
   }catch(error){
-    showToast("Could not save comment");
+    showToast(error?.message || "Could not save comment");
     submitButton.disabled = false;
     return;
   }
