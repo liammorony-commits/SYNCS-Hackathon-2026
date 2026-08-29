@@ -952,12 +952,13 @@ function swipeTargetForGesture(currentEra, dx, dy, elapsedMs){
 
 (function(){
   let gesture=null;
-  const stage = $("stage");
-  stage.addEventListener("pointerdown", e=>{
+  document.addEventListener("pointerdown", e=>{
+    if(!$("screen-result").classList.contains("active")) return;
+    if(document.querySelector(".modal-backdrop:not(.hidden)")) return;
     if((e.pointerType === "mouse" && e.button !== 0) || e.target.closest("button, a, input, textarea, select")) return;
     gesture = { x:e.clientX, y:e.clientY, startedAt:performance.now(), pointerId:e.pointerId };
   });
-  stage.addEventListener("pointerup", e=>{
+  document.addEventListener("pointerup", e=>{
     if(!gesture || gesture.pointerId !== e.pointerId) return;
     const targetEra = swipeTargetForGesture(
       state.era,
@@ -968,7 +969,7 @@ function swipeTargetForGesture(currentEra, dx, dy, elapsedMs){
     gesture = null;
     if(targetEra) setEra(targetEra);
   });
-  stage.addEventListener("pointercancel", ()=>{ gesture = null; });
+  document.addEventListener("pointercancel", ()=>{ gesture = null; });
 })();
 
 function setEra(era){
