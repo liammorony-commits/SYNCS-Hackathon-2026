@@ -619,7 +619,6 @@ async function runRecognition() {
 
     console.log(`GPS: ${userLat.toFixed(6)}, ${userLng.toFixed(6)} (±${Math.round(accuracyM)}m accuracy)`);
     console.log("Nearest buildings:", scoredBuildings.slice(0, 3).map(s => `${s.building.name}: ${Math.round(s.dist)}m`).join(" · "));
-    showToast(`±${Math.round(accuracyM)}m • ${scoredBuildings[0].building.name} ${Math.round(scoredBuildings[0].dist)}m • ${scoredBuildings[1].building.name} ${Math.round(scoredBuildings[1].dist)}m`, 6000);
 
     const MAX_DISTANCE_METERS = 3000;
     let selectedBuilding = scoredBuildings.length > 0 && scoredBuildings[0].dist <= MAX_DISTANCE_METERS
