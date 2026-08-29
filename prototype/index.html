@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Time Lens Prototype</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="tabs">
+        <button class="tab active" data-view="past">PAST</button>
+        <button class="tab" data-view="present">PRESENT</button>
+      </div>
+      <div class="place-badge">Quadrangle<br><span>The University of Sydney</span></div>
+      <div class="radar">NE</div>
+    </header>
+
+    <main class="viewport">
+      <section class="pane past active" id="pastPane">
+        <div class="holograms">
+          <div class="holo-card">
+            <h3>1886</h3>
+            <p>A Wedding in the Quadrangle</p>
+            <button class="view-event">View Event</button>
+          </div>
+          <div class="holo-card">
+            <h3>1920</h3>
+            <p>Graduation Day</p>
+            <button class="view-event">View Event</button>
+          </div>
+          <div class="holo-card">
+            <h3>1854</h3>
+            <p>The Foundation</p>
+            <button class="view-event">View Event</button>
+          </div>
+        </div>
+
+        <div class="drawer">
+          <div class="history">
+            <h4>HISTORY</h4>
+            <ul>
+              <li><strong>1886</strong> A Wedding in the Quadrangle</li>
+              <li><strong>1920</strong> Graduation Day</li>
+              <li><strong>1950</strong> Post-War Celebrations</li>
+              <li><strong>2000</strong> A New Millennium</li>
+            </ul>
+          </div>
+
+          <aside class="about">
+            <h4>ABOUT THIS PLACE</h4>
+            <p>The Quadrangle has been the heart of the University of Sydney since the 1850s...</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="pane present" id="presentPane">
+        <div class="present-top">
+          <h2>Present Moments <span class="live">Live</span></h2>
+          <div class="present-cards" id="presentCards"></div>
+        </div>
+
+        <div class="drawer small">
+          <div class="present-feed">
+            <h4>Recent People Nearby</h4>
+            <ul id="peopleList"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="controls">
+      <button id="homeBtn" class="control"><span>Home</span></button>
+      <div class="scan-wrapper">
+        <div id="scanButton" class="scan">SCANNING</div>
+        <div class="scan-meter">
+          <div class="meter-fill" style="height:80%"></div>
+        </div>
+      </div>
+      <button id="galleryBtn" class="control"><span>Gallery</span></button>
+    </nav>
+
+    <div class="left-tab">Interactive</div>
+    <div class="right-tab">Past</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
