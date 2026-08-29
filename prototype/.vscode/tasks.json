@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: install",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "group": "build",
+      "options": { "cwd": "${workspaceFolder}" }
+    },
+    {
+      "label": "start expo",
+      "type": "shell",
+      "command": "npx expo start",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "group": "none",
+      "isBackground": true,
+      "options": { "cwd": "${workspaceFolder}" }
+    }
+  ]
+}
