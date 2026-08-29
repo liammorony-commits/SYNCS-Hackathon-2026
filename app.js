@@ -3,8 +3,8 @@ const MOCK_BUILDINGS = [
     id: "quadrangle",
     name: "The Quadrangle",
     meta: "1859 · neo-gothic / sandstone",
-    lat: -33.8860,
-    lng: 151.1873,
+    lat: -33.8860547,
+    lng: 151.1888052,
     history: "The historic heart of the university, built from Sydney sandstone. It has hosted countless graduation ceremonies and is often compared to Hogwarts by tourists.",
     comments: [
       {text:"Took my graduation photos right here by the jacaranda tree.", activity:"watch", likes:142, era:"past", author:"sarah_m"},
@@ -48,8 +48,8 @@ const MOCK_BUILDINGS = [
     id: "fisher",
     name: "Fisher Library (F03)",
     meta: "1962 · modern / academic",
-    lat: -33.8875,
-    lng: 151.1883,
+    lat: -33.8864494,
+    lng: 151.1905904,
     history: "One of the largest academic libraries in the southern hemisphere. The 24-hour section has seen generations of students pulling all-nighters before final exams.",
     comments: [
       {text:"Fell asleep on level 5 trying to finish a research essay.", activity:"work", likes:156, era:"past", author:"matt_t"},
@@ -62,8 +62,8 @@ const MOCK_BUILDINGS = [
     id: "cpc",
     name: "Charles Perkins Centre (D17)",
     meta: "2014 · contemporary / biomedical",
-    lat: -33.8837,
-    lng: 151.1835,
+    lat: -33.8874395,
+    lng: 151.1835069,
     history: "A world-class medical and health research hub. The interior boasts a massive, sweeping staircase designed to mimic DNA.",
     comments: [
       {text:"Changed my major from Med to Law, but I still walk over here just for the good coffee.", activity:"wander", likes:118, era:"present", author:"former_premed"},
@@ -76,8 +76,8 @@ const MOCK_BUILDINGS = [
     id: "carslaw",
     name: "Carslaw Building (F07)",
     meta: "1960s · brutalist / academic",
-    lat: -33.8864,
-    lng: 151.1901,
+    lat: -33.8882312,
+    lng: 151.1907681,
     history: "A massive block of classrooms handling most of the university's math and science tutorials. Known for its confusing layout and endless ramps.",
     comments: [
       {text:"Been wandering around level 3 for ten minutes trying to find room 373.", activity:"wander", likes:210, era:"present", author:"lost_first_year"},
@@ -90,8 +90,8 @@ const MOCK_BUILDINGS = [
     id: "pnr_hub",
     name: "PNR Learning Hub",
     meta: "2019 · modern / engineering",
-    lat: -33.8891,
-    lng: 151.1912,
+    lat: -33.8904532,
+    lng: 151.1930938,
     history: "Opened as part of the Engineering Precinct upgrade, featuring state-of-the-art collaborative studios, workshops, and tiered social learning spaces for students.",
     comments: [
       {text:"Spent twelve hours straight working on the capstone project in these pods.", activity:"work", likes:114, era:"present", author:"eng_student"},
@@ -105,8 +105,8 @@ const MOCK_BUILDINGS = [
     id: "seymour_centre",
     name: "Seymour Centre",
     meta: "1975 · brutalist / performing arts",
-    lat: -33.8899,
-    lng: 151.1919,
+    lat: -33.8885683,
+    lng: 151.1935486,
     history: "A vibrant performing arts centre located on the university campus, featuring multiple theatres hosting student revues, independent plays, and major cultural festivals.",
     comments: [
       {text:"Performing in the annual law revue on the York Theatre stage.", activity:"work", likes:95, era:"present", author:"revue_star"},
@@ -265,13 +265,14 @@ function getCurrentPosition() {
 
 /* ---------------- PHOTO RECOGNITION (backend vision call) ---------------- */
 const API_BASE = window.UNDERTOW_API_BASE || "http://localhost:4000";
-const PHOTO_CONFIDENCE_THRESHOLD = 0.6;
+const PHOTO_CONFIDENCE_THRESHOLD = 0.75;
+const PHOTO_ONLY_CONFIDENCE_THRESHOLD = 0.85; // stricter bar when GPS gives us no corroboration at all
 const AMBIGUITY_MARGIN_METERS = 100;
 
 async function identifyBuildingFromPhoto(photoDataURL) {
   if (!photoDataURL) return null;
   try {
-    const candidates = MOCK_BUILDINGS.map(b => ({ id: b.id, name: b.name, meta: b.meta }));
+    const candidates = MOCK_BUILDINGS.map(b => ({ id: b.id, name: b.name, meta: b.meta, history: b.history }));
     const res = await fetch(`${API_BASE}/api/identify-building`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -333,6 +334,7 @@ $("file-input").addEventListener("change", (e)=>{
 function onPhotoReady(dataURL, isLive){
   state.photoDataURL = dataURL;
   state.isLive = isLive;
+  $("camera-hint").textContent = "point at a building";
   if(!isLive) stopCamera();
   showScreen("screen-loading");
   runRecognition();
@@ -393,22 +395,10 @@ async function runRecognition() {
       ? scoredBuildings[0].building
       : MOCK_BUILDINGS[0];
 
-    // 2. Safeguard Check: If GPS places you tightly between PNR and Seymour Centre,
-    // let's do a quick structural sanity check on the photo/context to ensure absolute accuracy.
-    if (state.photoDataURL && scoredBuildings.length > 1) {
-      const topTwoIds = [scoredBuildings[0].building.id, scoredBuildings[1].building.id];
-
-      // If the close candidates involve PNR and Seymour Centre:
-      if (topTwoIds.includes("pnr_hub") && topTwoIds.includes("seymour_centre")) {
-        // If user is further north/west toward the engineering hub, force PNR.
-        // This acts as a reliable tie-breaker for overlapping campus zones.
-        if (userLat > -33.8895) {
-          selectedBuilding = MOCK_BUILDINGS.find(b => b.id === "pnr_hub");
-        }
-      }
-    }
-
-    // 3. The photo is a strong signal, but only when GPS doesn't clearly disagree.
+    // 2. The photo is a strong signal, but only when GPS doesn't clearly disagree.
+    // (Ambiguity between close-together buildings like PNR/Seymour is handled
+    // generically here via AMBIGUITY_MARGIN_METERS, rather than a hardcoded
+    // lat/lng rule for one specific pair.)
     const photoResult = await photoResultPromise;
     selectedBuilding = applyPhotoOverride(selectedBuilding, photoResult, scoredBuildings);
 
@@ -416,10 +406,26 @@ async function runRecognition() {
 
   } catch (err) {
     console.warn("Geolocation failed or was denied:", err.message);
-    $("loading-text").textContent = "GPS unavailable — analyzing photo instead…";
+    $("loading-text").textContent = "GPS unavailable — analyzing photo…";
     const photoResult = await photoResultPromise;
-    const pick = applyPhotoOverride(MOCK_BUILDINGS[0], photoResult);
-    setTimeout(() => finishWith(pick), 500);
+
+    // With no GPS to corroborate, require a much more confident photo match
+    // before trusting it — otherwise we'd silently default to some building
+    // (previously always the Quadrangle) whenever the photo is ambiguous.
+    if (photoResult && photoResult.confidence >= PHOTO_ONLY_CONFIDENCE_THRESHOLD) {
+      const matched = MOCK_BUILDINGS.find(b => b.id === photoResult.id);
+      if (matched) {
+        setTimeout(() => finishWith(matched), 500);
+        return;
+      }
+    }
+
+    setTimeout(() => {
+      showScreen("screen-capture");
+      // camera-error is also set asynchronously by startCamera() and would race
+      // with this message, so use camera-hint instead — it's untouched elsewhere.
+      $("camera-hint").textContent = "couldn't confidently identify this building — enable location, or try a clearer, closer photo";
+    }, 500);
   }
 }
 

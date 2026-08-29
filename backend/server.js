@@ -242,16 +242,27 @@ app.post('/api/identify-building', async (req, res) => {
   }
 
   const candidateDescriptions = candidateList
-    .map((c) => `- id: "${c.id}", name: "${c.name}"${c.meta ? `, details: "${c.meta}"` : ''}`)
+    .map((c) => {
+      const parts = [`- id: "${c.id}", name: "${c.name}"`];
+      if (c.meta) parts.push(`era/style: "${c.meta}"`);
+      if (c.history) parts.push(`description: "${c.history}"`);
+      return parts.join(', ');
+    })
     .join('\n');
 
-  const prompt = `You are identifying a building on a university campus from a photo.
+  const prompt = `You are identifying a building on a university campus from a photo. Several of these buildings are architecturally similar (modern glass/steel or brutalist concrete), so do not guess based on generic style alone — only pick one if you can point to a specific, distinguishing visual detail (unique roofline, signage, entrance shape, window pattern, materials) that sets it apart from the OTHER candidates below.
+
 Here are the only valid candidate buildings:
 ${candidateDescriptions}
 
-Look at the photo and decide which candidate building it most likely shows, based on visible architecture, signage, and surroundings.
+Rules:
+1. If the photo clearly and distinctively matches one candidate, return it with high confidence (0.75-1.0).
+2. If the photo could plausibly be more than one candidate, or only loosely matches generic "modern building" traits shared by several candidates, you MUST return a LOW confidence (below 0.4) even if you have to pick your best guess for buildingId — do not inflate confidence just because you produced an answer.
+3. Never let familiarity or fame of a building's name bias your answer — an unfamiliar or newer building is just as valid an answer as a famous one, and must not be favored by default.
+4. If the photo isn't of a building at all, or matches none of the candidates, return buildingId: null.
+
 Respond with ONLY a JSON object, no other text, in this exact shape:
-{"buildingId": "<one of the candidate ids, or null if none match>", "confidence": <number between 0 and 1>, "reason": "<one short sentence>"}`;
+{"buildingId": "<one of the candidate ids, or null>", "confidence": <number between 0 and 1>, "reason": "<the specific visual detail that drove your answer, or why you're unsure>"}`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
