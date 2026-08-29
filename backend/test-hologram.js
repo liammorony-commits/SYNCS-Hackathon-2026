@@ -43,7 +43,9 @@ test('Every browser-rendered hologram asset exists', () => {
   const scene = generateQuadrangleHologramScene();
   const assetUrls = [
     scene.assets.poster,
-    ...Object.values(scene.assets.states).map((asset) => asset.src)
+    ...Object.values(scene.assets.states).flatMap((asset) =>
+      [asset.src, asset.fallbackSrc].filter(Boolean)
+    )
   ];
 
   for (const assetUrl of new Set(assetUrls)) {
@@ -53,11 +55,33 @@ test('Every browser-rendered hologram asset exists', () => {
   }
 });
 
+test('Walk state exposes a complete, naturally paced sprite cycle', () => {
+  const scene = generateQuadrangleHologramScene();
+  const walk = scene.assets.states.walk;
+  const firstWindowMs =
+    (scene.animation.actionWindows.walking[0].end -
+      scene.animation.actionWindows.walking[0].start) *
+    scene.animation.durationMs;
+  const secondWindowMs =
+    (scene.animation.actionWindows.walking[1].end -
+      scene.animation.actionWindows.walking[1].start) *
+    scene.animation.durationMs;
+
+  assert.equal(walk.type, 'sprite-sheet');
+  assert.equal(walk.columns * walk.rows, walk.frameCount);
+  assert.equal(walk.frameOrder.length, walk.frameCount);
+  assert.equal(walk.cycleDurationMs, 980);
+  assert.equal(firstWindowMs / walk.cycleDurationMs, 6);
+  assert.equal(secondWindowMs / walk.cycleDurationMs, 5);
+});
+
 test('Browser entry point is a transparent, description-free AR layer', () => {
   const html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
 
   assert.match(html, /background:\s*transparent !important/);
   assert.match(html, /function blackKeyToAlpha/);
+  assert.match(html, /function extractWalkCycle/);
+  assert.match(html, /function updateWalkFrame/);
   assert.match(html, /window\.TimeLensHologram/);
   assert.doesNotMatch(html, /scene__photo|identity-card|story-section|historical-summary/);
 });

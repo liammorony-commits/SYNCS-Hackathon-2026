@@ -85,9 +85,17 @@ function generateQuadrangleHologramScene() {
       poster: `${HOLOGRAM_ASSET_ROOT}/inspect-plan.png`,
       states: {
         walk: {
-          src: `${HOLOGRAM_ASSET_ROOT}/walk.png`,
-          width: 1039,
-          height: 1514
+          type: 'sprite-sheet',
+          src: `${HOLOGRAM_ASSET_ROOT}/walk-cycle-sheet.png`,
+          fallbackSrc: `${HOLOGRAM_ASSET_ROOT}/walk.png`,
+          width: 1536,
+          height: 1024,
+          columns: 3,
+          rows: 2,
+          frameCount: 6,
+          cycleDurationMs: 980,
+          direction: 'screen-right',
+          frameOrder: [0, 1, 2, 3, 4, 5]
         },
         inspectPlan: {
           src: `${HOLOGRAM_ASSET_ROOT}/inspect-plan.png`,
@@ -102,20 +110,20 @@ function generateQuadrangleHologramScene() {
       easing: 'linear',
       keyframes: [
         { offset: 0, xPct: -12, yPct: 92, scale: 0.78, opacity: 0, phase: 'materialising' },
-        { offset: 0.08, xPct: -5, yPct: 92, scale: 0.82, opacity: 0.88, phase: 'walking' },
-        { offset: 0.46, xPct: 49, yPct: 92, scale: 0.98, opacity: 0.92, phase: 'walking' },
-        { offset: 0.5, xPct: 53, yPct: 92, scale: 1, opacity: 0.96, phase: 'inspecting plans' },
-        { offset: 0.73, xPct: 53, yPct: 92, scale: 1, opacity: 0.96, phase: 'inspecting plans' },
-        { offset: 0.79, xPct: 59, yPct: 92, scale: 0.98, opacity: 0.92, phase: 'walking' },
-        { offset: 0.95, xPct: 105, yPct: 92, scale: 0.84, opacity: 0.78, phase: 'walking' },
-        { offset: 1, xPct: 114, yPct: 92, scale: 0.8, opacity: 0, phase: 'dematerialising' }
+        { offset: 0.06, xPct: -5, yPct: 92, scale: 0.82, opacity: 0.88, phase: 'walking' },
+        { offset: 0.46, xPct: 50, yPct: 92, scale: 0.98, opacity: 0.94, phase: 'walking' },
+        { offset: 0.48, xPct: 53, yPct: 92, scale: 1, opacity: 0.96, phase: 'inspecting plans' },
+        { offset: 0.63, xPct: 53, yPct: 92, scale: 1, opacity: 0.96, phase: 'walking' },
+        { offset: 0.65, xPct: 55, yPct: 92, scale: 0.98, opacity: 0.94, phase: 'walking' },
+        { offset: 0.98, xPct: 105, yPct: 92, scale: 0.84, opacity: 0.72, phase: 'walking' },
+        { offset: 1, xPct: 110, yPct: 92, scale: 0.8, opacity: 0, phase: 'dematerialising' }
       ],
       actionWindows: {
         walking: [
-          { start: 0.06, end: 0.49 },
-          { start: 0.77, end: 0.98 }
+          { start: 0.06, end: 0.48 },
+          { start: 0.63, end: 0.98 }
         ],
-        inspectPlan: { start: 0.48, end: 0.77 }
+        inspectPlan: { start: 0.48, end: 0.63 }
       }
     },
     accessibility: {
