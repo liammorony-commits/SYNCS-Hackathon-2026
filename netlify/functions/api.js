@@ -4,6 +4,7 @@
 // run directly (require.main === module), so requiring it here just
 // gives us the Express app to wrap, without starting a real server.
 const serverless = require('serverless-http');
+// Backend bundle revision: persistent-owned-comments-v5
 const app = require('../../backend/server');
 
 const handleRequest = serverless(app);

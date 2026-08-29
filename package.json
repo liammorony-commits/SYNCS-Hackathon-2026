@@ -4,6 +4,7 @@
   "description": "Root package.json so Netlify Functions can resolve the wrapped Express backend's dependencies.",
   "private": true,
   "dependencies": {
+    "@netlify/blobs": "^11.0.2",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "serverless-http": "^3.2.0"

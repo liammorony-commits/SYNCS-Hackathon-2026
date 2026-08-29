@@ -27,6 +27,7 @@
         <h1>Undertow</h1>
         <p class="tagline">what a building remembers</p>
       </div>
+      <button id="btn-edit-profile" class="btn-profile" type="button">profile</button>
     </header>
 
     <div class="camera-frame">
@@ -36,16 +37,7 @@
         <div class="corner tl"></div><div class="corner tr"></div>
         <div class="corner bl"></div><div class="corner br"></div>
       </div>
-      <p id="camera-hint" class="camera-hint">move your camera across a building</p>
-      <aside id="ar-discovery" class="ar-discovery hidden" aria-live="polite">
-        <span class="ar-discovery-kicker">place discovered</span>
-        <h2 id="ar-discovery-name">Nearby building</h2>
-        <p id="ar-discovery-meta"></p>
-        <div class="ar-discovery-actions">
-          <button id="btn-ar-dismiss" class="btn-small" type="button">not now</button>
-          <button id="btn-ar-explore" class="btn-ar-explore" type="button">explore area</button>
-        </div>
-      </aside>
+      <p id="camera-hint" class="camera-hint">point at a building</p>
     </div>
 
     <div class="capture-controls">
@@ -56,7 +48,7 @@
           <path d="M21 15l-5-5L5 21"/>
         </svg>
       </button>
-      <span class="ar-status"><span class="ar-status-dot"></span>scanning nearby</span>
+      <button id="btn-shutter" class="btn-shutter" aria-label="take photo"><span></span></button>
       <button id="btn-flip" class="btn-icon" title="switch camera" aria-label="switch camera">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/>
@@ -102,15 +94,17 @@
       <video id="stage-video" class="stage-photo hidden" autoplay playsinline muted></video>
       <img id="stage-photo" class="stage-photo" alt="building photo">
       <div id="past-panorama" class="past-panorama hidden">
-        <img id="past-panorama-img" src="quadrangle-past-panorama-expanded.png" alt="expanded historical view of the Quadrangle" draggable="false">
-      </div>
-      <div id="hologram-stage" class="hologram-stage hidden">
-        <div id="hologram-sprite" class="hologram-sprite"></div>
-        <img id="hologram-inspect" class="hologram-inspect hidden" src="holograms/edmund-blacket/inspect-plan.png" alt="" draggable="false">
-        <div id="hologram-caption" class="hologram-caption hidden">
-          <span class="hologram-caption-label">edmund blacket</span>
-          <p id="hologram-caption-text"></p>
-          <span class="hologram-read-more" id="hologram-read-more">tap to read more</span>
+        <div id="past-panorama-world" class="past-panorama-world">
+          <img id="past-panorama-img" src="quadrangle-past-panorama-expanded.png" alt="expanded historical view of the Quadrangle" draggable="false">
+          <div id="hologram-stage" class="hologram-stage hidden">
+            <div id="hologram-sprite" class="hologram-sprite"></div>
+            <img id="hologram-inspect" class="hologram-inspect hidden" src="holograms/edmund-blacket/inspect-plan.png" alt="" draggable="false">
+            <div id="hologram-caption" class="hologram-caption hidden" role="button" tabindex="0" aria-label="Read more about Edmund Blacket">
+              <span class="hologram-caption-label">edmund blacket</span>
+              <p id="hologram-caption-text"></p>
+              <span class="hologram-read-more" id="hologram-read-more">tap to read more</span>
+            </div>
+          </div>
         </div>
       </div>
       <div id="hologram-reader" class="hologram-reader hidden">
@@ -152,10 +146,12 @@
         <option value="work">work / errands</option>
         <option value="rush">rush past, always late</option>
         <option value="watch">just watch the building</option>
+        <option value="other">other</option>
       </select>
+      <input id="input-activity-other" class="hidden" type="text" maxlength="60" placeholder="What did you do here?">
       <label class="field-label">your comment</label>
       <textarea id="input-text" maxlength="220" placeholder="e.g. I've walked past this corner every morning for six years…"></textarea>
-      <label class="field-label">add a photo (optional)</label>
+      <label id="input-photo-label" class="field-label">add a photo (optional)</label>
       <input type="file" id="input-photo" accept="image/*">
       <img id="input-photo-preview" class="hidden">
       <div class="modal-actions">
@@ -163,6 +159,38 @@
         <button id="btn-submit-comment" class="btn-shutter-small">Post</button>
       </div>
     </div>
+  </div>
+
+  <!-- ============ DELETE COMMENT CONFIRMATION ============ -->
+  <div id="delete-modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal confirmation-modal">
+      <h3 id="delete-modal-title">Delete this comment?</h3>
+      <p>This cannot be undone. Your comment and its attached photo will be permanently removed.</p>
+      <div class="modal-actions">
+        <button id="btn-cancel-delete" class="btn-ghost" type="button">Cancel</button>
+        <button id="btn-confirm-delete" class="btn-danger" type="button">Delete comment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FIRST-USE PROFILE ============ -->
+  <div id="profile-modal-backdrop" class="modal-backdrop profile-backdrop" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <form id="profile-form" class="modal profile-modal">
+      <p class="profile-eyebrow">Welcome to Undertow</p>
+      <h3 id="profile-modal-title">Tell us who you are</h3>
+      <p>Your name appears beside anything you share. Your phone number lets other visitors contact you.</p>
+      <label class="field-label" for="profile-first-name">First name</label>
+      <input id="profile-first-name" type="text" maxlength="40" autocomplete="given-name" required placeholder="Sarah">
+      <label class="field-label" for="profile-last-initial">Last initial</label>
+      <input id="profile-last-initial" type="text" maxlength="1" autocomplete="family-name" required placeholder="M">
+      <label class="field-label" for="profile-phone">Phone number</label>
+      <input id="profile-phone" type="tel" maxlength="24" autocomplete="tel" required placeholder="04xx xxx xxx">
+      <label class="field-label" for="profile-photo">Profile picture (optional)</label>
+      <input id="profile-photo" type="file" accept="image/*">
+      <img id="profile-photo-preview" class="profile-photo-preview hidden" alt="Profile picture preview">
+      <p id="profile-error" class="form-error hidden"></p>
+      <button class="btn-shutter-small profile-continue" type="submit">Continue</button>
+    </form>
   </div>
 
   <div id="toast" class="toast hidden"></div>

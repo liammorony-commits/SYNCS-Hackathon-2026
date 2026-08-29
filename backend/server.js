@@ -3,6 +3,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const { generateQuadrangleHologramScene } = require('./hologram');
 const { findUsydLandmark } = require('./usyd-landmarks');
+const { listComments, createComment, deleteComment } = require('./comment-store');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -11,6 +12,12 @@ const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+function commentOwnerKey(req) {
+  const ownerId = String(req.get('x-comment-owner') || '').trim();
+  if (!/^[a-zA-Z0-9_-]{16,120}$/.test(ownerId)) return null;
+  return crypto.createHash('sha256').update(ownerId).digest('hex');
+}
 
 const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
 
@@ -109,51 +116,78 @@ app.get('/api/location/:location', (req, res) => {
   });
 });
 
-app.get('/api/comments', (req, res) => {
-  const location = String(req.query.location || 'quadrangle').toLowerCase();
-  const recentOnly = req.query.recentOnly !== 'false';
-
-  const filtered = comments.filter((comment) => {
-    if (comment.location !== location) return false;
-    if (!recentOnly) return true;
-    return isRecent(comment.timestamp);
-  });
-
-  filtered.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
-
-  res.json(filtered);
+app.get('/api/comments', async (req, res) => {
+  const buildingId = String(req.query.buildingId || req.query.location || 'quadrangle').trim().toLowerCase();
+  try {
+    return res.json(await listComments(buildingId, commentOwnerKey(req)));
+  } catch (error) {
+    console.error('Could not read comments:', error);
+    return res.status(500).json({ error: 'Comments could not be loaded.' });
+  }
 });
 
-app.post('/api/comments', (req, res) => {
-  const { name, text, location } = req.body || {};
-  const cleanName = String(name || '').trim();
+app.post('/api/comments', async (req, res) => {
+  const { text, activity, customActivity, era, photo, firstName, lastInitial, phone, profilePhoto } = req.body || {};
   const cleanText = String(text || '').trim();
-  const cleanLocation = String(location || 'quadrangle').toLowerCase();
+  const buildingId = String(req.body?.buildingId || req.body?.location || 'quadrangle').trim().toLowerCase();
 
-  if (!cleanName || !cleanText) {
-    return res.status(400).json({
-      error: 'Name and text are required.'
-    });
+  if (!cleanText) {
+    return res.status(400).json({ error: 'Comment text is required.' });
+  }
+  if (!/^[a-z0-9_-]{1,80}$/.test(buildingId)) {
+    return res.status(400).json({ error: 'Invalid building ID.' });
+  }
+  const ownerKey = commentOwnerKey(req);
+  if (!ownerKey) return res.status(400).json({ error: 'A valid comment owner ID is required.' });
+  const cleanFirstName = String(firstName || '').trim();
+  const cleanLastInitial = String(lastInitial || '').trim().charAt(0).toUpperCase();
+  const cleanPhone = String(phone || '').trim();
+  if (!/^[\p{L}' -]{1,40}$/u.test(cleanFirstName) || !/^\p{L}$/u.test(cleanLastInitial)) {
+    return res.status(400).json({ error: 'A valid first name and last initial are required.' });
+  }
+  if (!/^\+?[0-9 ()-]{8,24}$/.test(cleanPhone)) {
+    return res.status(400).json({ error: 'A valid phone number is required.' });
+  }
+  const cleanActivity = String(activity || 'wander');
+  const cleanCustomActivity = String(customActivity || '').trim().slice(0, 60);
+  if (cleanActivity === 'other' && !cleanCustomActivity) {
+    return res.status(400).json({ error: 'Please describe the other activity.' });
   }
 
-  if (!locationData[cleanLocation]) {
-    return res.status(404).json({
-      error: 'Location not supported yet.',
-      supportedLocations: Object.keys(locationData)
+  try {
+    const comment = await createComment({
+      buildingId,
+      text: cleanText.slice(0, 2000),
+      activity: cleanActivity,
+      customActivity: cleanActivity === 'other' ? cleanCustomActivity : null,
+      era: era === 'past' ? 'past' : 'present',
+      photo: typeof photo === 'string' && photo.startsWith('data:image/') ? photo : null,
+      ownerKey,
+      author: `${cleanFirstName} ${cleanLastInitial}.`,
+      contactPhone: cleanPhone,
+      profilePhoto: typeof profilePhoto === 'string' && profilePhoto.startsWith('data:image/') ? profilePhoto : null
     });
+    const { ownerKey: privateOwnerKey, ...publicComment } = comment;
+    return res.status(201).json({ ...publicComment, canDelete: true });
+  } catch (error) {
+    console.error('Could not save comment:', error);
+    return res.status(500).json({ error: 'Comment could not be saved.' });
   }
+});
 
-  const newComment = {
-    id: crypto.randomUUID(),
-    location: cleanLocation,
-    name: cleanName,
-    text: cleanText,
-    timestamp: Date.now()
-  };
-
-  comments.unshift(newComment);
-
-  return res.status(201).json(newComment);
+app.delete('/api/comments/:id', async (req, res) => {
+  const buildingId = String(req.query.buildingId || req.query.location || '').trim().toLowerCase();
+  if (!buildingId) return res.status(400).json({ error: 'buildingId is required.' });
+  const ownerKey = commentOwnerKey(req);
+  if (!ownerKey) return res.status(403).json({ error: 'You do not own this comment.' });
+  try {
+    const deleted = await deleteComment(buildingId, String(req.params.id), ownerKey);
+    if (!deleted) return res.status(404).json({ error: 'Comment not found.' });
+    return res.status(204).end();
+  } catch (error) {
+    console.error('Could not delete comment:', error);
+    return res.status(500).json({ error: 'Comment could not be deleted.' });
+  }
 });
 
 app.post('/api/connect', (req, res) => {
