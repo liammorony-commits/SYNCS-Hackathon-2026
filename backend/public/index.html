@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="only light" />
+    <title>Edmund Blacket AR Hologram</title>
+    <style>
+      :root {
+        --loop-duration: 14000ms;
+        --gait-duration: 760ms;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: transparent !important;
+      }
+
+      body {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .ar-overlay {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+        background: transparent;
+        contain: strict;
+      }
+
+      .hologram-stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: clamp(190px, 25vw, 340px);
+        aspect-ratio: 1039 / 1514;
+        margin: 0;
+        opacity: 0;
+        transform-origin: 50% 100%;
+        will-change: transform, opacity;
+        transition: opacity 180ms linear;
+      }
+
+      .hologram-stage.is-ready {
+        opacity: 1;
+      }
+
+      .hologram-stage::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        left: 19%;
+        right: 19%;
+        bottom: 1%;
+        height: 4.5%;
+        border: 1px solid rgba(96, 224, 255, 0.72);
+        border-radius: 50%;
+        background: rgba(39, 192, 238, 0.08);
+        box-shadow:
+          0 0 12px rgba(75, 218, 255, 0.62),
+          0 0 28px rgba(75, 218, 255, 0.3),
+          inset 0 0 10px rgba(170, 244, 255, 0.34);
+        animation: emitterPulse var(--gait-duration) ease-in-out infinite alternate;
+      }
+
+      .hologram-sprite {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        opacity: 0;
+        filter: drop-shadow(0 0 11px rgba(55, 206, 255, 0.5));
+        -webkit-user-drag: none;
+      }
+
+      .hologram-sprite.is-mask-fallback {
+        -webkit-mask-image: var(--mask-source);
+        mask-image: var(--mask-source);
+        -webkit-mask-position: center;
+        mask-position: center;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        mask-mode: luminance;
+      }
+
+      .hologram-sprite--walk {
+        animation:
+          walkState var(--loop-duration) linear infinite,
+          gait var(--gait-duration) ease-in-out infinite alternate;
+      }
+
+      .hologram-sprite--inspect {
+        animation:
+          inspectState var(--loop-duration) linear infinite,
+          inspectBreath 2.8s ease-in-out infinite alternate;
+      }
+
+      .hologram-stage:not(.is-ready) .hologram-sprite,
+      .hologram-stage:not(.is-ready)::before,
+      .hologram-stage.is-paused .hologram-sprite,
+      .hologram-stage.is-paused::before {
+        animation-play-state: paused;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @keyframes walkState {
+        0%,
+        46% {
+          opacity: 1;
+        }
+        49%,
+        75% {
+          opacity: 0;
+        }
+        78%,
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes inspectState {
+        0%,
+        46% {
+          opacity: 0;
+        }
+        50%,
+        74% {
+          opacity: 1;
+        }
+        78%,
+        100% {
+          opacity: 0;
+        }
+      }
+
+      @keyframes gait {
+        from {
+          transform: translateY(0) rotate(-0.35deg);
+        }
+        to {
+          transform: translateY(-1.5%) rotate(0.35deg);
+        }
+      }
+
+      @keyframes inspectBreath {
+        from {
+          transform: translateY(0) scale(1);
+        }
+        to {
+          transform: translateY(-0.4%) scale(1.002);
+        }
+      }
+
+      @keyframes emitterPulse {
+        from {
+          opacity: 0.35;
+          transform: scaleX(0.84);
+        }
+        to {
+          opacity: 0.82;
+          transform: scaleX(1);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .hologram-stage {
+          width: clamp(176px, 54vw, 250px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hologram-stage::before,
+        .hologram-sprite {
+          animation: none !important;
+        }
+
+        .hologram-sprite--walk {
+          opacity: 0;
+        }
+
+        .hologram-sprite--inspect {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="ar-overlay" id="ar-overlay">
+      <figure
+        class="hologram-stage"
+        id="hologram-stage"
+        role="img"
+        aria-label="Edmund Blacket hologram walking and pausing to inspect an architectural plan"
+      >
+        <img
+          class="hologram-sprite hologram-sprite--walk"
+          id="walk-sprite"
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+        />
+        <img
+          class="hologram-sprite hologram-sprite--inspect"
+          id="inspect-sprite"
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+        />
+      </figure>
+      <p class="sr-only" id="live-status" role="status" aria-live="polite"></p>
+    </main>
+
+    <script>
+      (() => {
+        const FALLBACK_SCENE = {
+          assets: {
+            states: {
+              walk: { src: '/assets/holograms/edmund-blacket/walk.png' },
+              inspectPlan: { src: '/assets/holograms/edmund-blacket/inspect-plan.png' }
+            }
+          },
+          animation: {
+            durationMs: 14000,
+            keyframes: [
+              { offset: 0, xPct: -12, yPct: 92, scale: 0.78, opacity: 0, phase: 'materialising' },
+              { offset: 0.08, xPct: -5, yPct: 92, scale: 0.82, opacity: 0.88, phase: 'walking' },
+              { offset: 0.46, xPct: 49, yPct: 92, scale: 0.98, opacity: 0.92, phase: 'walking' },
+              { offset: 0.5, xPct: 53, yPct: 92, scale: 1, opacity: 0.96, phase: 'inspecting plans' },
+              { offset: 0.73, xPct: 53, yPct: 92, scale: 1, opacity: 0.96, phase: 'inspecting plans' },
+              { offset: 0.79, xPct: 59, yPct: 92, scale: 0.98, opacity: 0.92, phase: 'walking' },
+              { offset: 0.95, xPct: 105, yPct: 92, scale: 0.84, opacity: 0.78, phase: 'walking' },
+              { offset: 1, xPct: 114, yPct: 92, scale: 0.8, opacity: 0, phase: 'dematerialising' }
+            ]
+          },
+          accessibility: {
+            label: 'Edmund Blacket hologram walking and pausing to inspect an architectural plan'
+          }
+        };
+
+        const overlayElement = document.querySelector('#ar-overlay');
+        const stageElement = document.querySelector('#hologram-stage');
+        const walkSprite = document.querySelector('#walk-sprite');
+        const inspectSprite = document.querySelector('#inspect-sprite');
+        const liveStatus = document.querySelector('#live-status');
+        const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const query = new URLSearchParams(window.location.search);
+
+        let sceneData = FALLBACK_SCENE;
+        let pathAnimation = null;
+        let phaseTimer = null;
+        let resizeTimer = null;
+        let manuallyPaused = false;
+        let automaticallyPaused = false;
+        let lastPhase = '';
+        let runtimeUrls = [];
+        let systemStatic = reducedMotionQuery.matches || query.get('motion') === 'still';
+
+        function pathTransform(frame, bounds) {
+          const x = (bounds.width * frame.xPct) / 100;
+          const y = (bounds.height * frame.yPct) / 100;
+          return `translate3d(${x}px, ${y}px, 0) translate(-50%, -100%) scale(${frame.scale})`;
+        }
+
+        function staticTransform(bounds) {
+          return pathTransform({ xPct: 53, yPct: 92, scale: 1 }, bounds);
+        }
+
+        function loadImage(url) {
+          return new Promise((resolve, reject) => {
+            const image = new Image();
+            image.decoding = 'async';
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error(`Unable to load sprite: ${url}`));
+            image.src = url;
+          });
+        }
+
+        async function blackKeyToAlpha(url) {
+          const image = await loadImage(url);
+          const canvas = document.createElement('canvas');
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+
+          const context = canvas.getContext('2d', { willReadFrequently: true });
+          if (!context) throw new Error('Canvas 2D is unavailable');
+
+          context.drawImage(image, 0, 0);
+          const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+          const pixels = frame.data;
+
+          for (let index = 0; index < pixels.length; index += 4) {
+            const brightness = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
+            const alpha = Math.round(Math.max(0, Math.min(255, (brightness - 2) * 5.1)));
+            pixels[index + 3] = alpha;
+          }
+
+          context.putImageData(frame, 0, 0);
+
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(
+              (value) => (value ? resolve(value) : reject(new Error('Unable to encode transparent sprite'))),
+              'image/png'
+            );
+          });
+
+          const runtimeUrl = URL.createObjectURL(blob);
+          runtimeUrls.push(runtimeUrl);
+          return runtimeUrl;
+        }
+
+        function applyMaskFallback(element, url) {
+          element.src = url;
+          element.classList.add('is-mask-fallback');
+          element.style.setProperty('--mask-source', `url("${url.replaceAll('"', '\\"')}")`);
+        }
+
+        async function prepareSprite(element, url) {
+          try {
+            element.src = await blackKeyToAlpha(url);
+            element.classList.remove('is-mask-fallback');
+          } catch (error) {
+            console.warn(error.message);
+            applyMaskFallback(element, url);
+          }
+        }
+
+        function currentPhase() {
+          if (!pathAnimation || systemStatic) return 'inspecting plans';
+          const duration = sceneData.animation.durationMs;
+          const offset = (Number(pathAnimation.currentTime || 0) % duration) / duration;
+          let phase = sceneData.animation.keyframes[0].phase;
+
+          for (const frame of sceneData.animation.keyframes) {
+            if (offset >= frame.offset) phase = frame.phase;
+          }
+
+          return phase;
+        }
+
+        function emitPhase() {
+          const phase = currentPhase();
+          if (phase === lastPhase) return;
+          lastPhase = phase;
+          liveStatus.textContent = phase;
+          window.dispatchEvent(
+            new CustomEvent('timelens:phasechange', {
+              detail: { phase, sceneId: sceneData.id || null }
+            })
+          );
+        }
+
+        function pausePerformance() {
+          stageElement.classList.add('is-paused');
+          pathAnimation?.pause();
+        }
+
+        function playPerformance() {
+          if (systemStatic) return;
+          stageElement.classList.remove('is-paused');
+          pathAnimation?.play();
+        }
+
+        function renderStatic() {
+          clearInterval(phaseTimer);
+          pathAnimation?.cancel();
+          pathAnimation = null;
+          stageElement.classList.add('is-paused');
+          stageElement.style.transform = staticTransform(overlayElement.getBoundingClientRect());
+          stageElement.style.opacity = '0.96';
+          walkSprite.style.opacity = '0';
+          inspectSprite.style.opacity = '1';
+          emitPhase();
+        }
+
+        function startPerformance(preserveTime = 0) {
+          clearInterval(phaseTimer);
+          pathAnimation?.cancel();
+
+          if (systemStatic) {
+            renderStatic();
+            return;
+          }
+
+          stageElement.classList.remove('is-paused');
+          stageElement.style.transform = '';
+          stageElement.style.opacity = '';
+          walkSprite.style.opacity = '';
+          inspectSprite.style.opacity = '';
+
+          const bounds = overlayElement.getBoundingClientRect();
+          const duration = sceneData.animation.durationMs;
+          const keyframes = sceneData.animation.keyframes.map((frame) => ({
+            offset: frame.offset,
+            transform: pathTransform(frame, bounds),
+            opacity: frame.opacity
+          }));
+
+          pathAnimation = stageElement.animate(keyframes, {
+            duration,
+            iterations: Infinity,
+            easing: 'linear'
+          });
+          pathAnimation.currentTime = preserveTime % duration;
+          phaseTimer = window.setInterval(emitPhase, 180);
+          emitPhase();
+
+          if (manuallyPaused || automaticallyPaused) pausePerformance();
+        }
+
+        async function applyScene(data) {
+          sceneData = data;
+          const duration = Number(data.animation?.durationMs) || 14000;
+          document.documentElement.style.setProperty('--loop-duration', `${duration}ms`);
+          stageElement.setAttribute(
+            'aria-label',
+            data.accessibility?.label || FALLBACK_SCENE.accessibility.label
+          );
+
+          const walkUrl = data.assets?.states?.walk?.src || FALLBACK_SCENE.assets.states.walk.src;
+          const inspectUrl =
+            data.assets?.states?.inspectPlan?.src || FALLBACK_SCENE.assets.states.inspectPlan.src;
+
+          await Promise.all([
+            prepareSprite(walkSprite, walkUrl),
+            prepareSprite(inspectSprite, inspectUrl)
+          ]);
+
+          stageElement.classList.add('is-ready');
+          startPerformance();
+          window.dispatchEvent(
+            new CustomEvent('timelens:hologram-ready', {
+              detail: { sceneId: data.id || null, mode: data.ar?.currentMode || 'transparent-2.5d-overlay' }
+            })
+          );
+        }
+
+        async function loadScene() {
+          try {
+            const response = await fetch('/api/hologram/quadrangle', {
+              headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) throw new Error(`Scene API returned ${response.status}`);
+            const data = await response.json();
+            if (!Array.isArray(data.animation?.keyframes)) throw new Error('Invalid scene manifest');
+            await applyScene(data);
+          } catch (error) {
+            console.warn(`Using embedded scene: ${error.message}`);
+            await applyScene(FALLBACK_SCENE);
+          }
+        }
+
+        const observer = new IntersectionObserver(
+          ([entry]) => {
+            if (systemStatic || manuallyPaused) return;
+            automaticallyPaused = !entry.isIntersecting;
+            automaticallyPaused ? pausePerformance() : playPerformance();
+          },
+          { threshold: 0.05 }
+        );
+        observer.observe(overlayElement);
+
+        document.addEventListener('visibilitychange', () => {
+          if (systemStatic || manuallyPaused) return;
+          automaticallyPaused = document.hidden;
+          automaticallyPaused ? pausePerformance() : playPerformance();
+        });
+
+        reducedMotionQuery.addEventListener('change', (event) => {
+          systemStatic = event.matches || query.get('motion') === 'still';
+          systemStatic ? renderStatic() : startPerformance();
+        });
+
+        window.addEventListener('resize', () => {
+          clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(() => {
+            const currentTime = Number(pathAnimation?.currentTime || 0);
+            systemStatic ? renderStatic() : startPerformance(currentTime);
+          }, 120);
+        });
+
+        window.addEventListener('beforeunload', () => {
+          runtimeUrls.forEach((url) => URL.revokeObjectURL(url));
+          runtimeUrls = [];
+        });
+
+        window.TimeLensHologram = Object.freeze({
+          play() {
+            manuallyPaused = false;
+            playPerformance();
+          },
+          pause() {
+            manuallyPaused = true;
+            pausePerformance();
+          },
+          restart() {
+            manuallyPaused = false;
+            if (pathAnimation) pathAnimation.currentTime = 0;
+            playPerformance();
+          },
+          setVisible(visible) {
+            stageElement.hidden = !visible;
+          },
+          getManifest() {
+            return sceneData;
+          }
+        });
+
+        loadScene();
+      })();
+    </script>
+  </body>
+</html>

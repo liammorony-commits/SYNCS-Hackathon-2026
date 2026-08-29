@@ -1,12 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const path = require('path');
+const { generateQuadrangleHologramScene } = require('./hologram');
 
 const app = express();
 const PORT = process.env.PORT || 4001;
 
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
 
@@ -17,17 +20,22 @@ const locationData = {
     shortName: 'The Quadrangle',
     summary: 'A place with 170+ years of stories.',
     description:
-      "The Quadrangle began taking shape in the 1850s, when architect Edmund Blacket designed the University's first major buildings in a Victorian Gothic style. The Great Hall began in 1854 and the wider campus grew around it as a living heart of the university.",
+      "The Quadrangle's first range took shape after Edmund Blacket was appointed University architect in 1854. Foundations were laid in 1855, and his Victorian Gothic Great Hall opened in 1859; later architects completed the Quadrangle over the following century.",
     history: [
       {
         year: 1854,
-        title: 'Construction begins',
-        description: 'The first major buildings of the University begin to take shape in a Gothic style.'
+        title: 'Blacket appointed architect',
+        description: "The University selects Blacket's plans for its first purpose-built range and Great Hall."
+      },
+      {
+        year: 1855,
+        title: 'Foundations laid',
+        description: 'Work begins on the sandstone buildings that form the Quadrangle’s founding phase.'
       },
       {
         year: 1859,
-        title: 'The Great Hall takes form',
-        description: 'The hall becomes one of the defining symbols of the University campus.'
+        title: 'The Great Hall opens',
+        description: 'The Great Hall opens on 18 July and becomes a defining symbol of the campus.'
       },
       {
         year: 1881,
@@ -267,6 +275,50 @@ const usydBuildings = [
       'University of Sydney science faculty records',
       'Academic infrastructure and campus history'
     ]
+  },
+  {
+    id: 'sydney-university-chemistry-building',
+    name: 'Chemistry Building',
+    aliases: ['chemistry building', 'chemistry'],
+    summary:
+      'The Chemistry Building is a central teaching and research facility at the University of Sydney, reflecting the university’s historic strength in the sciences. It has long supported practical education, laboratory work, and scientific discovery on campus.',
+    sources: [
+      'University of Sydney science records',
+      'Campus chemistry and teaching history'
+    ]
+  },
+  {
+    id: 'sydney-university-medicine-building',
+    name: 'Medicine Building',
+    aliases: ['medicine building', 'medical school building'],
+    summary:
+      'The Medicine Building contributes to the University of Sydney’s long tradition of medical education and research. It represents the university’s role in shaping healthcare training and scientific knowledge across the region.',
+    sources: [
+      'University of Sydney medical faculty records',
+      'Campus healthcare and education history'
+    ]
+  },
+  {
+    id: 'sydney-university-engineering-building',
+    name: 'Engineering Building',
+    aliases: ['engineering building', 'school of engineering'],
+    summary:
+      'The Engineering Building is a major part of the University of Sydney’s commitment to technical education and innovation. It reflects the campus’s role in training engineers and supporting the development of practical expertise.',
+    sources: [
+      'University of Sydney engineering faculty records',
+      'Campus technical education history'
+    ]
+  },
+  {
+    id: 'sydney-university-studio-building',
+    name: 'The Studio',
+    aliases: ['the studio', 'studio'],
+    summary:
+      'The Studio is part of the creative and collaborative spaces on campus that support design, media, and student experimentation. It reflects the broader university culture of innovation, art, and interdisciplinary learning.',
+    sources: [
+      'University of Sydney creative education records',
+      'Campus spaces and student life planning'
+    ]
   }
 ];
 
@@ -278,15 +330,22 @@ function findUsydBuilding(landmarkName) {
   }
 
   for (const building of usydBuildings) {
-    if (building.name.toLowerCase() === cleanName) {
+    const exactName = building.name.toLowerCase() === cleanName;
+    const exactAlias = building.aliases.some((alias) => alias.toLowerCase() === cleanName);
+
+    if (exactName || exactAlias) {
       return building;
     }
 
-    if (building.aliases.some((alias) => alias.toLowerCase() === cleanName)) {
-      return building;
-    }
+    const relevantAliases = building.aliases
+      .map((alias) => alias.toLowerCase())
+      .filter((alias) => alias.length > 4);
 
-    if (building.aliases.some((alias) => cleanName.includes(alias.toLowerCase()) || alias.toLowerCase().includes(cleanName))) {
+    const partialAliasMatch = relevantAliases.some((alias) => {
+      return cleanName.includes(alias) || alias.includes(cleanName);
+    });
+
+    if (partialAliasMatch) {
       return building;
     }
   }
@@ -515,6 +574,10 @@ app.post('/api/scan', (req, res) => {
     detected: false,
     message: 'This location could not be recognised. Try scanning the Quadrangle.'
   });
+});
+
+app.get('/api/hologram/quadrangle', (req, res) => {
+  res.json(generateQuadrangleHologramScene());
 });
 
 app.post('/api/landmark-summary', async (req, res) => {
