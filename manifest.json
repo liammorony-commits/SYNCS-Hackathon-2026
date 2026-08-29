@@ -1,0 +1,14 @@
+{
+  "name": "Undertow — building memory",
+  "short_name": "Undertow",
+  "description": "Photograph a building, see its history, and watch who's said what they do there.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14171a",
+  "theme_color": "#14171a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
