@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const { generateQuadrangleHologramScene } = require('./hologram');
+const { findUsydLandmark } = require('./usyd-landmarks');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -319,6 +321,38 @@ Respond with ONLY a JSON object, no other text, in this exact shape:
     console.error('Photo identification request failed:', err);
     return res.status(502).json({ identified: false, message: 'Photo identification service unreachable.' });
   }
+});
+
+app.get('/api/hologram/quadrangle', (req, res) => {
+  res.json(generateQuadrangleHologramScene());
+});
+
+app.get('/api/landmark-summary', (req, res) => {
+  const name = String(req.query.name || '').trim();
+  if (!name) {
+    return res.status(400).json({ error: 'A landmark name query param is required.' });
+  }
+
+  const landmark = findUsydLandmark(name);
+  if (landmark) {
+    return res.json({
+      landmark: name,
+      summary: landmark.summary,
+      sources: landmark.sources,
+      sourceType: 'curated-usyd-catalogue',
+      canonicalName: landmark.name,
+      kind: landmark.kind
+    });
+  }
+
+  return res.json({
+    landmark: name,
+    summary: `${name} is a landmark with deep cultural, historical, and architectural importance to its surrounding community. It reflects local identity, public memory, and a continuing story of people, place, and design.`,
+    sources: ['General landmark history references', 'Local heritage and cultural context'],
+    sourceType: 'generic-fallback',
+    canonicalName: null,
+    kind: null
+  });
 });
 
 if (require.main === module) {

@@ -5,13 +5,14 @@ const MOCK_BUILDINGS = [
     meta: "1859 · neo-gothic / sandstone",
     lat: -33.8860547,
     lng: 151.1888052,
-    history: "The historic heart of the university, built from Sydney sandstone. It has hosted countless graduation ceremonies and is often compared to Hogwarts by tourists.",
+    history: "The University of Sydney Quadrangle began in 1855 with Edmund Blacket's East Range and Great Hall; later additions extended the sandstone ensemble into the twentieth century, with the West Tower completed in 1966. Built as Gothic and Tudor Revival ranges around a court, it remains the University's symbolic heart and forms part of an exceptionally significant group of Gothic Revival buildings.",
     comments: [
       {text:"Took my graduation photos right here by the jacaranda tree.", activity:"watch", likes:142, era:"past", author:"sarah_m"},
       {text:"Still getting lost trying to find my tutorial room in these corridors.", activity:"wander", likes:56, era:"present", author:"j.chen"},
       {text:"Sitting on the grass between lectures when the sun is out.", activity:"sit", likes:89, era:"present", author:"anon"},
       {text:"Met my sailing crew here before heading out to the harbor for the weekend.", activity:"meet", likes:45, era:"past", author:"ellie"},
-      {text:"Reading for my history seminar in the cloisters.", activity:"work", likes:21, era:"present", author:"anon"}
+      {text:"Reading for my history seminar in the cloisters.", activity:"work", likes:21, era:"present", author:"anon"},
+      {text:"Anyone free around here?", activity:"meet", likes:12, era:"present", author:"henry.m"}
     ]
   },
   {
@@ -20,7 +21,7 @@ const MOCK_BUILDINGS = [
     meta: "2006 · contemporary / steel & glass",
     lat: -33.888221,
     lng: 151.194049,
-    history: "The headquarters for Computer Science at USYD, easily recognized by its metallic exterior. Its 24/7 labs are legendary for hosting hackathons and sleep-deprived coders.",
+    history: "Completed in 2007 through the Campus 2010 program, J12 was built as the School of Information Technologies Building. The University now identifies it as the Computer Science Building, which houses computer science teaching and research as well as the Faculty of Engineering Dean's office.",
     comments: [
       {text:"Been staring at the same AutoHotkey script error for three hours.", activity:"work", likes:128, era:"present", author:"dev_danny"},
       {text:"Surviving the SYNCS hackathon purely on energy drinks and spite.", activity:"rush", likes:84, era:"present", author:"hack_0x"},
@@ -35,7 +36,7 @@ const MOCK_BUILDINGS = [
     meta: "2009 · contemporary / glass louvres",
     lat: -33.8887,
     lng: 151.1895,
-    history: "Opened in 2009, this structure features a striking glass facade, a 300-seat auditorium, and extensive moot courts. It is designed to maximize natural light and environmental sustainability.",
+    history: "Sydney Law School relocated to the Francis-Jones Morehen Thorp-designed New Law Building on Eastern Avenue in 2009. The award-winning purpose-built complex brings together a moot court, law library, teaching spaces and a public forecourt for legal education and research.",
     comments: [
       {text:"The coffee line at Taste is always way too long, but I wait anyway.", activity:"wander", likes:67, era:"present", author:"priya.s"},
       {text:"Cramming for the LAWS1026 exam on level 2. Should have done my readings.", activity:"work", likes:112, era:"present", author:"anon"},
@@ -50,7 +51,7 @@ const MOCK_BUILDINGS = [
     meta: "1962 · modern / academic",
     lat: -33.8864494,
     lng: 151.1905904,
-    history: "One of the largest academic libraries in the southern hemisphere. The 24-hour section has seen generations of students pulling all-nighters before final exams.",
+    history: "The current Fisher Library was designed by Ken Woolley and Tom O'Mahoney as a mid-century modern replacement for the original 1909 library in what is now MacLaurin Hall, with its undergraduate wing opening in 1963. It is the University's only building to have received both a Sulman Award and a RIBA Bronze Medal and remains a major centre for study, collections and student life.",
     comments: [
       {text:"Fell asleep on level 5 trying to finish a research essay.", activity:"work", likes:156, era:"past", author:"matt_t"},
       {text:"Wandering the stacks looking for a book that's allegedly 'available'.", activity:"wander", likes:72, era:"present", author:"lucy_w"},
@@ -64,7 +65,7 @@ const MOCK_BUILDINGS = [
     meta: "2014 · contemporary / biomedical",
     lat: -33.8874395,
     lng: 151.1835069,
-    history: "A world-class medical and health research hub. The interior boasts a massive, sweeping staircase designed to mimic DNA.",
+    history: "Established in 2012, the Charles Perkins Centre's D17 research and education hub opened in June 2014 beside Royal Prince Alfred Hospital with laboratories, teaching spaces, core facilities, a pathology museum and a clinic. Named for alumnus and Aboriginal rights activist Charles Perkins, the Centre brings multiple disciplines together to address obesity, diabetes, cardiovascular disease and related conditions.",
     comments: [
       {text:"Changed my major from Med to Law, but I still walk over here just for the good coffee.", activity:"wander", likes:118, era:"present", author:"former_premed"},
       {text:"Watching everyone stress about their anatomy practicals from the upper balconies.", activity:"watch", likes:75, era:"past", author:"bio_major"},
@@ -78,7 +79,7 @@ const MOCK_BUILDINGS = [
     meta: "1960s · brutalist / academic",
     lat: -33.8882312,
     lng: 151.1907681,
-    history: "A massive block of classrooms handling most of the university's math and science tutorials. Known for its confusing layout and endless ramps.",
+    history: "Carslaw Building was begun in 1960 and completed in 1965 at the southern end of Eastern Avenue as a building for first-year science and mathematics. It remains an academic building with teaching spaces and University units including the School of History and Philosophy of Science.",
     comments: [
       {text:"Been wandering around level 3 for ten minutes trying to find room 373.", activity:"wander", likes:210, era:"present", author:"lost_first_year"},
       {text:"Rushing to the rooftop to catch the environmental cleanup team meeting.", activity:"rush", likes:45, era:"past", author:"green_team"},
@@ -92,7 +93,7 @@ const MOCK_BUILDINGS = [
     meta: "2019 · modern / engineering",
     lat: -33.8904532,
     lng: 151.1930938,
-    history: "Opened as part of the Engineering Precinct upgrade, featuring state-of-the-art collaborative studios, workshops, and tiered social learning spaces for students.",
+    history: "PNR Learning Hub occupies Level 2 of the Peter Nicol Russell Building at J02 on the Darlington campus. Operated by the University Library, it provides computers, study pods, printing, lockers and other collaborative study facilities with public and University access.",
     comments: [
       {text:"Spent twelve hours straight working on the capstone project in these pods.", activity:"work", likes:114, era:"present", author:"eng_student"},
       {text:"Rushing from Carslaw to PNR in 5 minutes should be classified as an extreme sport.", activity:"rush", likes:89, era:"present", author:"runner_02"},
@@ -107,7 +108,7 @@ const MOCK_BUILDINGS = [
     meta: "1975 · brutalist / performing arts",
     lat: -33.8885683,
     lng: 151.1935486,
-    history: "A vibrant performing arts centre located on the university campus, featuring multiple theatres hosting student revues, independent plays, and major cultural festivals.",
+    history: "The Seymour Centre opened on the Darlington campus in 1975 after businessman Everest York Seymour left a bequest for a centre devoted to musical and dramatic arts. Designed by Allen Jack and Cottier in a bold Brutalist style, it remains a major University performing-arts venue and supporter of independent artists and arts education.",
     comments: [
       {text:"Performing in the annual law revue on the York Theatre stage.", activity:"work", likes:95, era:"present", author:"revue_star"},
       {text:"Rushing to make curtain call after an evening lecture at New Law.", activity:"rush", likes:44, era:"present", author:"theatre_kid"},
@@ -127,6 +128,53 @@ const ACTIVITY_LABEL = {
   work:"works here", rush:"rushes past", watch:"watches the building"
 };
 
+// Fixed "story time" the whole app's comment timestamps are anchored to,
+// rather than the real current time — keeps past/present feeling consistent
+// no matter when this is actually opened.
+const COMMENT_TIME_REFERENCE = new Date(2026, 7, 30, 9, 0, 0).getTime();
+
+// Past comments get an actual computed date (~10 years back); present
+// comments just get a random "N minutes ago" label, no real date.
+function assignCommentTiming(era){
+  if(era === "past"){
+    const tenYearsMs = 10 * 365.25 * 24 * 60 * 60 * 1000;
+    const wiggleMs = (Math.random() - 0.5) * 2 * (60 * 24 * 60 * 60 * 1000); // +/- ~60 days
+    return { timestamp: COMMENT_TIME_REFERENCE - tenYearsMs + wiggleMs, timeLabel: null };
+  }
+  const minutesAgo = Math.floor(Math.random() * 60) + 1; // random 1-60
+  return { timestamp: null, timeLabel: minutesAgo === 1 ? "1 minute ago" : `${minutesAgo} minutes ago` };
+}
+
+function formatRelativeTime(timestamp){
+  const diffMs = COMMENT_TIME_REFERENCE - timestamp;
+  const diffDays = Math.round(diffMs / 86400000);
+  const diffYears = Math.round(diffMs / (365.25 * 86400000));
+  if(diffYears >= 1) return `${diffYears}y ago`;
+  return `${diffDays}d ago`;
+}
+
+function formatCommentTime(c){
+  return c.era === "past" ? formatRelativeTime(c.timestamp) : (c.timeLabel || "1 minute ago");
+}
+
+// Comments added by the user are only kept in memory otherwise, and vanish
+// on reload or re-scanning the same building — persist them per-building
+// in localStorage so they stick around on this device.
+function getStoredComments(buildingId){
+  try{
+    const raw = localStorage.getItem(`undertow_comments_${buildingId}`);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function addStoredComment(buildingId, comment){
+  try{
+    const list = getStoredComments(buildingId);
+    list.push(comment);
+    localStorage.setItem(`undertow_comments_${buildingId}`, JSON.stringify(list));
+  }catch(e){ /* storage unavailable or full — comment still shows for this session */ }
+}
+
 let state = {
   era: "present",
   building: null,
@@ -137,7 +185,8 @@ let state = {
   facingMode: "environment"
 };
 
-const SHOW_COMMENTS_AND_SILHOUETTES = false; // temporarily disabled
+const SHOW_COMMENTS = true;
+const SHOW_SILHOUETTES = false; // temporarily disabled
 
 let silhouettes = [];
 let canvas, ctx, rafId;
@@ -218,7 +267,7 @@ function activatePanorama(){
   updatePanoramaTransform();
   enablePanoramaOrientation();
   const hint = $("stage-hint");
-  if(hint) hint.textContent = "drag or turn your phone to look around the past";
+  if(hint) hint.textContent = "drag or turn your phone to look around the Past";
 }
 
 function deactivatePanorama(){
@@ -226,12 +275,179 @@ function deactivatePanorama(){
   if(container) container.classList.add("hidden");
   disablePanoramaOrientation();
   const hint = $("stage-hint");
-  if(hint) hint.textContent = "swipe for past/present";
+  if(hint) hint.textContent = "swipe for Past/Present";
 }
 
 function syncPastPanorama(){
   if(isQuadranglePast()) activatePanorama();
   else deactivatePanorama();
+}
+
+/* ---------------- HOLOGRAM (Edmund Blacket, Quadrangle only) ---------------- */
+const HOLOGRAM_ASSET_LOCAL_ROOT = "holograms/edmund-blacket";
+const HOLOGRAM_FRAME_POSITIONS = ["0% 0%", "50% 0%", "100% 0%", "0% 100%", "50% 100%", "100% 100%"];
+
+let hologramScene = null;
+let hologramSummary = null;
+let hologramFetchStarted = false;
+let hologramRafId = null;
+let hologramStartTime = null;
+let hologramSpoken = false;
+let hologramPausedAt = null;
+
+function localHologramAssetPath(remotePath){
+  const filename = String(remotePath || "").split("/").pop();
+  return `${HOLOGRAM_ASSET_LOCAL_ROOT}/${filename}`;
+}
+
+function truncateSummary(text, maxLen){
+  if(text.length <= maxLen) return text;
+  const cut = text.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(" ");
+  return cut.slice(0, lastSpace > 0 ? lastSpace : maxLen).trim() + "…";
+}
+
+function pauseHologram(){
+  if(hologramPausedAt !== null) return;
+  hologramPausedAt = performance.now();
+  if(hologramRafId){ cancelAnimationFrame(hologramRafId); hologramRafId = null; }
+}
+
+function resumeHologram(){
+  if(hologramPausedAt === null) return;
+  const pausedDuration = performance.now() - hologramPausedAt;
+  if(hologramStartTime !== null) hologramStartTime += pausedDuration;
+  hologramPausedAt = null;
+  if(!hologramRafId) hologramRafId = requestAnimationFrame(stepHologram);
+}
+
+function openHologramReader(){
+  if(!hologramSummary || !hologramSummary.summary) return;
+  $("hologram-reader-text").textContent = hologramSummary.summary;
+  $("hologram-reader").classList.remove("hidden");
+  pauseHologram();
+}
+
+function closeHologramReader(){
+  $("hologram-reader").classList.add("hidden");
+  resumeHologram();
+}
+
+$("hologram-caption").addEventListener("click", openHologramReader);
+$("hologram-reader-close").addEventListener("click", closeHologramReader);
+
+async function loadHologramData(){
+  if(hologramFetchStarted) return;
+  hologramFetchStarted = true;
+  try{
+    const [sceneRes, summaryRes] = await Promise.all([
+      fetch(`${API_BASE}/api/hologram/quadrangle`),
+      fetch(`${API_BASE}/api/landmark-summary?name=quadrangle`)
+    ]);
+    if(sceneRes.ok) hologramScene = await sceneRes.json();
+    if(summaryRes.ok) hologramSummary = await summaryRes.json();
+  }catch(e){
+    console.warn("Hologram data unavailable:", e.message);
+  }
+}
+
+function findKeyframeSpan(keyframes, progress){
+  for(let i=0; i<keyframes.length-1; i++){
+    if(progress >= keyframes[i].offset && progress <= keyframes[i+1].offset) return [keyframes[i], keyframes[i+1]];
+  }
+  return [keyframes[0], keyframes[0]];
+}
+
+function lerp(a, b, t){ return a + (b - a) * t; }
+
+function inWindow(windows, progress){
+  return windows.some(w => progress >= w.start && progress <= w.end);
+}
+
+function stepHologram(timestamp){
+  if(!hologramScene){ hologramRafId = requestAnimationFrame(stepHologram); return; }
+  if(hologramStartTime === null) hologramStartTime = timestamp;
+
+  const { animation, assets } = hologramScene;
+  const elapsed = (timestamp - hologramStartTime) % animation.durationMs;
+  const progress = elapsed / animation.durationMs;
+
+  const [k0, k1] = findKeyframeSpan(animation.keyframes, progress);
+  const span = k1.offset - k0.offset || 1;
+  const t = Math.min(Math.max((progress - k0.offset) / span, 0), 1);
+
+  const xPct = lerp(k0.xPct, k1.xPct, t);
+  const yPct = lerp(k0.yPct, k1.yPct, t);
+  const scale = lerp(k0.scale, k1.scale, t);
+  const opacity = lerp(k0.opacity, k1.opacity, t);
+
+  const stageEl = $("hologram-stage");
+  stageEl.style.left = `${xPct}%`;
+  stageEl.style.top = `${yPct}%`;
+  stageEl.style.transform = `translate(-50%, -100%) scale(${scale})`;
+  stageEl.style.opacity = opacity;
+
+  const isInspecting = inWindow([animation.actionWindows.inspectPlan], progress);
+  $("hologram-sprite").classList.toggle("hidden", isInspecting);
+  $("hologram-inspect").classList.toggle("hidden", !isInspecting);
+
+  if(!isInspecting){
+    const walk = assets.states.walk;
+    const cycleMs = (timestamp - hologramStartTime) % walk.cycleDurationMs;
+    const frameIdx = Math.floor((cycleMs / walk.cycleDurationMs) * walk.frameCount) % walk.frameCount;
+    $("hologram-sprite").style.backgroundPosition = HOLOGRAM_FRAME_POSITIONS[frameIdx] || HOLOGRAM_FRAME_POSITIONS[0];
+  }
+
+  if(progress > 0.05 && !hologramSpoken && hologramSummary && hologramSummary.summary){
+    hologramSpoken = true;
+    speakHologramSummary(hologramSummary.summary);
+  }
+
+  hologramRafId = requestAnimationFrame(stepHologram);
+}
+
+function speakHologramSummary(text){
+  if(typeof window.speechSynthesis === "undefined") return;
+  try{
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  }catch(e){ /* speech synthesis is a nice-to-have, ignore failures */ }
+}
+
+async function activateHologram(){
+  const stageEl = $("hologram-stage");
+  if(!stageEl) return;
+  await loadHologramData();
+  if(!hologramScene) return; // backend unavailable — degrade silently, like the other backend features
+
+  const sprite = $("hologram-sprite");
+  sprite.style.backgroundImage = `url('${localHologramAssetPath(hologramScene.assets.states.walk.src)}')`;
+  $("hologram-inspect").src = localHologramAssetPath(hologramScene.assets.poster);
+
+  if(hologramSummary && hologramSummary.summary){
+    $("hologram-caption-text").textContent = truncateSummary(hologramSummary.summary, 70);
+    $("hologram-caption").classList.remove("hidden");
+  }
+
+  stageEl.classList.remove("hidden");
+  hologramStartTime = null;
+  hologramSpoken = false;
+  if(!hologramRafId) hologramRafId = requestAnimationFrame(stepHologram);
+}
+
+function deactivateHologram(){
+  const stageEl = $("hologram-stage");
+  if(stageEl) stageEl.classList.add("hidden");
+  $("hologram-reader").classList.add("hidden");
+  hologramPausedAt = null;
+  if(hologramRafId){ cancelAnimationFrame(hologramRafId); hologramRafId = null; }
+  hologramStartTime = null;
+  if(typeof window.speechSynthesis !== "undefined") window.speechSynthesis.cancel();
+}
+
+function syncHologram(){
+  if(isQuadranglePast()) activateHologram();
+  else deactivateHologram();
 }
 
 /* ---------------- GEOLOCATION HELPERS ---------------- */
@@ -371,8 +587,10 @@ async function runRecognition() {
     state.comments = building.comments.map((c, idx) => ({
       id: "c" + idx + "_" + Date.now(),
       ...c,
-      photo: null
+      photo: null,
+      ...assignCommentTiming(c.era)
     }));
+    state.comments.push(...getStoredComments(building.id));
     state.selectedCommentId = null;
     state.era = "present";
     renderResult();
@@ -441,6 +659,8 @@ $("btn-back").addEventListener("click", ()=>{
   rafId = null;
   stopCamera();
   deactivatePanorama();
+  deactivateHologram();
+  document.body.classList.remove("theme-light");
   $("stage-video").srcObject = null;
   showScreen("screen-capture");
 });
@@ -474,21 +694,23 @@ function renderResult(){
   buildSilhouettes();
   renderCommentsList();
   renderSpotlight();
-  if(!rafId && SHOW_COMMENTS_AND_SILHOUETTES) animate();
+  if(!rafId && SHOW_SILHOUETTES) animate();
 }
 
 function applyEraUI(){
   const stage = $("stage");
   stage.classList.toggle("is-past", state.era==="past");
   stage.classList.toggle("is-present", state.era==="present");
+  document.body.classList.toggle("theme-light", state.era==="present");
   $("era-slider").classList.toggle("past", state.era==="past");
   document.querySelectorAll(".era-btn").forEach(b=>{
     b.classList.toggle("active", b.dataset.era===state.era);
   });
-  document.documentElement.style.setProperty("--accent", state.era==="past" ? "var(--past)" : "var(--present)");
-  document.documentElement.style.setProperty("--accent-dim", state.era==="past" ? "var(--past-dim)" : "var(--present-dim)");
-  document.documentElement.style.setProperty("--accent-bg", state.era==="past" ? "var(--past-bg)" : "var(--present-bg)");
+  document.body.style.setProperty("--accent", state.era==="past" ? "var(--past)" : "var(--present)");
+  document.body.style.setProperty("--accent-dim", state.era==="past" ? "var(--past-dim)" : "var(--present-dim)");
+  document.body.style.setProperty("--accent-bg", state.era==="past" ? "var(--past-bg)" : "var(--present-bg)");
   syncPastPanorama();
+  syncHologram();
 }
 
 document.querySelectorAll(".era-btn").forEach(btn=>{
@@ -525,7 +747,7 @@ function eraComments(){
 
 function renderCommentsList(){
   const section = $("comments-section");
-  if(!SHOW_COMMENTS_AND_SILHOUETTES){ if(section) section.classList.add("hidden"); return; }
+  if(!SHOW_COMMENTS){ if(section) section.classList.add("hidden"); return; }
   if(section) section.classList.remove("hidden");
   const list = eraComments();
   $("comment-count").textContent = "(" + list.length + ")";
@@ -535,25 +757,41 @@ function renderCommentsList(){
     const li = document.createElement("li");
     li.className = "comment-item" + (c.id===state.selectedCommentId ? " highlighted":"");
     li.dataset.id = c.id;
+    const initial = (c.author || "?").trim().charAt(0).toUpperCase() || "?";
     li.innerHTML = `
-      <div class="comment-row">
-        <p class="comment-text">${escapeHTML(c.text)}</p>
-        <span class="comment-likes">♥ ${c.likes}</span>
+      <div class="comment-avatar">${escapeHTML(initial)}</div>
+      <div class="comment-body">
+        <p class="comment-text"><span class="comment-username">${escapeHTML(c.author)}</span>${escapeHTML(c.text)}</p>
+        <div class="comment-actions">
+          <span class="comment-time">${formatCommentTime(c)}</span>
+          ${c.author !== "you" ? `<button class="btn-contact" data-author="${escapeHTML(c.author)}">contact</button>` : ""}
+        </div>
+        ${c.photo ? `<img class="comment-photo" src="${c.photo}">` : ""}
       </div>
-      <div class="comment-meta">
-        <span>${escapeHTML(c.author)}</span>
-        <span class="activity-tag">${ACTIVITY_LABEL[c.activity]}</span>
-      </div>
-      ${c.photo ? `<img class="comment-photo" src="${c.photo}">` : ""}
+      <span class="comment-likes">♥ ${c.likes}</span>
+      <span class="activity-tag">${ACTIVITY_LABEL[c.activity]}</span>
     `;
     li.addEventListener("click", ()=> selectComment(c.id, true));
+    const contactBtn = li.querySelector(".btn-contact");
+    if(contactBtn){
+      contactBtn.addEventListener("click", async (e)=>{
+        e.stopPropagation();
+        const number = fakePhoneNumberFor(contactBtn.dataset.author);
+        try{
+          await navigator.clipboard.writeText(number);
+          showToast("Copied to clipboard");
+        }catch(err){
+          showToast(number);
+        }
+      });
+    }
     ul.appendChild(li);
   });
 }
 
 function renderSpotlight(){
   const box = $("spotlight-comment");
-  if(!SHOW_COMMENTS_AND_SILHOUETTES){ box.classList.add("hidden"); return; }
+  if(!SHOW_COMMENTS){ box.classList.add("hidden"); return; }
   const list = eraComments();
   const chosen = state.selectedCommentId
     ? state.comments.find(c=>c.id===state.selectedCommentId)
@@ -578,9 +816,30 @@ function escapeHTML(s){
   return s.replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 }
 
+function fakePhoneNumberFor(name){
+  let hash = 0;
+  for(let i=0; i<name.length; i++){ hash = (hash * 31 + name.charCodeAt(i)) >>> 0; }
+  const digits = String(hash).padStart(8, "0").slice(-8);
+  return `04${digits.slice(0,2)} ${digits.slice(2,5)} ${digits.slice(5,8)}`;
+}
+
+let toastTimer = null;
+function showToast(message){
+  const toast = $("toast");
+  if(!toast) return;
+  toast.textContent = message;
+  toast.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  requestAnimationFrame(()=> toast.classList.add("show"));
+  toastTimer = setTimeout(()=>{
+    toast.classList.remove("show");
+    setTimeout(()=> toast.classList.add("hidden"), 300);
+  }, 1600);
+}
+
 /* ---------------- SILHOUETTES ---------------- */
 function buildSilhouettes(){
-  if(!SHOW_COMMENTS_AND_SILHOUETTES){ silhouettes = []; return; }
+  if(!SHOW_SILHOUETTES){ silhouettes = []; return; }
   const list = eraComments();
   const W = $("silhouette-canvas").clientWidth || 300;
   const H = $("silhouette-canvas").clientHeight || 375;
@@ -780,8 +1039,8 @@ canvas.addEventListener("pointercancel", ()=>{ canvasDrag.active = false; });
 /* ---------------- ADD COMMENT MODAL ---------------- */
 $("btn-add-comment").addEventListener("click", ()=>{
   $("modal-title").textContent = state.era==="past"
-    ? "what did you do here?"
-    : "what do you do here?";
+    ? "What did you do here?"
+    : "What do you do here?";
   $("input-text").value = "";
   $("input-photo").value = "";
   $("input-photo-preview").classList.add("hidden");
@@ -810,9 +1069,11 @@ $("btn-submit-comment").addEventListener("click", ()=>{
   const comment = {
     id:"c_user_"+Date.now(),
     text, activity, likes:0, era: state.era,
-    author:"you", photo: pendingPhoto
+    author:"you", photo: pendingPhoto,
+    ...assignCommentTiming(state.era)
   };
   state.comments.push(comment);
+  if(state.building) addStoredComment(state.building.id, comment);
   pendingPhoto = null;
   $("modal-backdrop").classList.add("hidden");
   state.selectedCommentId = comment.id;
