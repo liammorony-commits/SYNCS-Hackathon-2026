@@ -298,6 +298,49 @@ let hologramStartTime = null;
 let hologramSpoken = false;
 let hologramPausedAt = null;
 
+const keyedHologramAssets = new Map();
+
+function smoothstep(edge0, edge1, value){
+  const t = Math.min(Math.max((value - edge0) / (edge1 - edge0), 0), 1);
+  return t * t * (3 - 2 * t);
+}
+
+function blackKeyHologramAsset(src){
+  if(keyedHologramAssets.has(src)) return keyedHologramAssets.get(src);
+
+  const keyedAsset = new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+
+      const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = frame.data;
+      for(let i = 0; i < pixels.length; i += 4){
+        const strongestChannel = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]);
+        // Remove the noisy near-black matte without clipping the cyan edge glow.
+        const matteAlpha = smoothstep(6, 30, strongestChannel);
+        pixels[i + 3] = Math.round(pixels[i + 3] * matteAlpha);
+      }
+
+      context.putImageData(frame, 0, 0);
+      canvas.toBlob(blob => {
+        if(!blob){ reject(new Error(`Could not key hologram asset: ${src}`)); return; }
+        resolve(URL.createObjectURL(blob));
+      }, "image/png");
+    };
+    image.onerror = () => reject(new Error(`Could not load hologram asset: ${src}`));
+    image.src = src;
+  });
+
+  keyedHologramAssets.set(src, keyedAsset);
+  return keyedAsset;
+}
+
 function localHologramAssetPath(remotePath){
   const filename = String(remotePath || "").split("/").pop();
   return `${HOLOGRAM_ASSET_LOCAL_ROOT}/${filename}`;
@@ -423,9 +466,19 @@ async function activateHologram(){
   await loadHologramData();
   if(!hologramScene) return; // backend unavailable — degrade silently, like the other backend features
 
+  const walkAsset = localHologramAssetPath(hologramScene.assets.states.walk.src);
+  const inspectAsset = localHologramAssetPath(hologramScene.assets.poster);
+  let keyedWalkAsset = walkAsset;
+  let keyedInspectAsset = inspectAsset;
+  try{
+    [keyedWalkAsset, keyedInspectAsset] = await Promise.all([
+      blackKeyHologramAsset(walkAsset), blackKeyHologramAsset(inspectAsset)
+    ]);
+  }catch(e){ console.warn("Hologram transparency unavailable:", e.message); }
+
   const sprite = $("hologram-sprite");
-  sprite.style.backgroundImage = `url('${localHologramAssetPath(hologramScene.assets.states.walk.src)}')`;
-  $("hologram-inspect").src = localHologramAssetPath(hologramScene.assets.poster);
+  sprite.style.backgroundImage = `url('${keyedWalkAsset}')`;
+  $("hologram-inspect").src = keyedInspectAsset;
 
   if(hologramSummary && hologramSummary.summary){
     $("hologram-caption-text").textContent = truncateSummary(hologramSummary.summary, 70);
@@ -483,12 +536,11 @@ function getCurrentPosition() {
 }
 
 /* ---------------- PHOTO RECOGNITION (backend vision call) ---------------- */
-// Locally, the backend runs standalone on :4000. Deployed (e.g. Netlify),
-// it's the same origin via a serverless function + redirect, so "" makes
-// fetch(`${API_BASE}/api/...`) resolve as a same-origin relative path.
-const API_BASE = window.UNDERTOW_API_BASE || (
-  ["localhost", "127.0.0.1"].includes(window.location.hostname) ? "http://localhost:4000" : ""
-);
+// Use the current origin by default. This works for both Netlify Dev and the
+// deployed site because netlify.toml redirects /api/* to the serverless API.
+// A standalone backend can still be selected before app.js loads with:
+// window.UNDERTOW_API_BASE = "http://localhost:4000".
+const API_BASE = window.UNDERTOW_API_BASE || "";
 const PHOTO_CONFIDENCE_THRESHOLD = 0.75;
 const PHOTO_ONLY_CONFIDENCE_THRESHOLD = 0.85; // stricter bar when GPS gives us no corroboration at all
 const AMBIGUITY_MARGIN_METERS = 100;

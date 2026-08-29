@@ -366,7 +366,6 @@ body{
   background-image:url('holograms/edmund-blacket/walk-cycle-sheet.png');
   background-size:300% 200%;
   background-repeat:no-repeat;
-  mix-blend-mode:screen;
   filter:grayscale(1) drop-shadow(0 0 10px rgba(255,255,255,0.6));
 }
 .hologram-sprite.hidden{display:none;}
@@ -374,7 +373,6 @@ body{
   position:absolute; inset:0;
   width:100%; height:100%;
   object-fit:contain;
-  mix-blend-mode:screen;
   filter:grayscale(1) drop-shadow(0 0 10px rgba(255,255,255,0.6));
 }
 .hologram-inspect.hidden{display:none;}
