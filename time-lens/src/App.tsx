@@ -1,5 +1,9 @@
-import { useEffect, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type {
+  ChangeEvent,
+  PointerEvent as ReactPointerEvent,
+} from 'react'
+
 import './App.css'
 
 import { getRecentComments } from './social/comments'
@@ -17,6 +21,92 @@ type Comment = {
   likes?: number
 }
 
+type Building = {
+  id: string
+  name: string
+  meta: string
+  lat: number
+  lng: number
+  history: string
+}
+
+const BUILDINGS: Building[] = [
+  {
+    id: 'quadrangle',
+    name: 'The Quadrangle',
+    meta: 'University of Sydney · Camperdown',
+    lat: -33.8860547,
+    lng: 151.1888052,
+    history:
+      'The University of Sydney Quadrangle began in the 1850s with Edmund Blacket’s East Range and Great Hall. Over generations, the sandstone complex became the symbolic heart of the University.',
+  },
+  {
+    id: 'sit_j12',
+    name: 'School of IT (J12)',
+    meta: 'University of Sydney · Camperdown',
+    lat: -33.888221,
+    lng: 151.194049,
+    history:
+      'The School of Computer Science is part of the University of Sydney’s modern teaching and research precinct.',
+  },
+  {
+    id: 'newlaw',
+    name: 'New Law Building (F10)',
+    meta: 'University of Sydney · Camperdown',
+    lat: -33.8887,
+    lng: 151.1895,
+    history:
+      'The New Law Building provides teaching, research and collaborative spaces for Sydney Law School.',
+  },
+  {
+    id: 'fisher',
+    name: 'Fisher Library',
+    meta: 'University of Sydney · Camperdown',
+    lat: -33.8864494,
+    lng: 151.1905904,
+    history:
+      'Fisher Library is one of the main libraries at the University of Sydney and a major centre for study and collections.',
+  },
+  {
+    id: 'carslaw',
+    name: 'Carslaw Building',
+    meta: 'University of Sydney · Camperdown',
+    lat: -33.8882312,
+    lng: 151.1907681,
+    history:
+      'Carslaw is a major teaching building associated with mathematics and science.',
+  },
+]
+
+function getDistanceInMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) {
+  const earthRadius = 6371e3
+  const radians = Math.PI / 180
+
+  const dLat = (lat2 - lat1) * radians
+  const dLon = (lon2 - lon1) * radians
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * radians) *
+      Math.cos(lat2 * radians) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+
+  const c =
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    )
+
+  return earthRadius * c
+}
+
 function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
@@ -25,19 +115,138 @@ function App() {
   const [identified, setIdentified] = useState(false)
   const [exploring, setExploring] = useState(false)
 
+  const [detectedBuilding, setDetectedBuilding] =
+    useState<Building | null>(null)
+
+  const [locationError, setLocationError] = useState('')
+  const [distanceAway, setDistanceAway] =
+    useState<number | null>(null)
+
+  const [gpsAccuracy, setGpsAccuracy] =
+    useState<number | null>(null)
+
   const [storiesOpen, setStoriesOpen] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
+  const [connectedId, setConnectedId] =
+    useState<number | null>(null)
 
-  const [connectedId, setConnectedId] = useState<number | null>(null)
   const [likedIds, setLikedIds] = useState<number[]>([])
 
-  const [showHologramInfo, setShowHologramInfo] = useState(true)
+  const [showHologramInfo, setShowHologramInfo] =
+    useState(false)
 
-  // ---------------------------------------------------
-  // IMAGE UPLOAD
-  // ---------------------------------------------------
+  // PANORAMA
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  const panoramaRef = useRef<HTMLDivElement | null>(null)
+
+  const dragStartX = useRef(0)
+  const dragStartOffset = useRef(0)
+
+  const [panoramaOffset, setPanoramaOffset] = useState(0)
+  const [panoramaDragging, setPanoramaDragging] =
+    useState(false)
+
+  // ===================================================
+  // GPS
+  // ===================================================
+
+  function findNearestBuilding(
+    latitude: number,
+    longitude: number
+  ) {
+    return BUILDINGS.map((building) => ({
+      building,
+
+      distance: getDistanceInMeters(
+        latitude,
+        longitude,
+        building.lat,
+        building.lng
+      ),
+    })).sort((a, b) => a.distance - b.distance)[0]
+  }
+
+  function scanLocation() {
+    setScanning(true)
+    setIdentified(false)
+    setDetectedBuilding(null)
+
+    setLocationError('')
+    setDistanceAway(null)
+
+    if (!navigator.geolocation) {
+      setScanning(false)
+
+      setLocationError(
+        'Location services are not supported by this browser.'
+      )
+
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude
+        const longitude = position.coords.longitude
+        const accuracy = position.coords.accuracy
+
+        const nearest = findNearestBuilding(
+          latitude,
+          longitude
+        )
+
+        setGpsAccuracy(accuracy)
+
+        const MAX_DISTANCE = 500
+
+        if (!nearest || nearest.distance > MAX_DISTANCE) {
+          setScanning(false)
+
+          setLocationError(
+            'No supported University of Sydney landmark was found nearby.'
+          )
+
+          return
+        }
+
+        setDetectedBuilding(nearest.building)
+        setDistanceAway(nearest.distance)
+
+        setScanning(false)
+        setIdentified(true)
+      },
+
+      (error) => {
+        console.error('GPS error:', error)
+
+        setScanning(false)
+
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError(
+            'Location permission was denied. Please allow location access and try again.'
+          )
+        } else {
+          setLocationError(
+            'We could not determine your location. Please try again.'
+          )
+        }
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    )
+  }
+
+  // ===================================================
+  // OPTIONAL PHOTO
+  // ===================================================
+
+  function handleFileChange(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
     const file = event.target.files?.[0]
 
     if (!file) return
@@ -46,72 +255,158 @@ function App() {
       URL.revokeObjectURL(imageUrl)
     }
 
-    const newImageUrl = URL.createObjectURL(file)
-
     setSelectedFile(file)
-    setImageUrl(newImageUrl)
-    setScanning(true)
-    setIdentified(false)
-    setExploring(false)
+    setImageUrl(URL.createObjectURL(file))
+
+    scanLocation()
   }
 
-  // ---------------------------------------------------
-  // FAKE LANDMARK SCANNING DELAY
-  // ---------------------------------------------------
+  // ===================================================
+  // PANORAMA
+  // ===================================================
 
-  useEffect(() => {
-    if (!scanning) return
+  function getPanoramaMax() {
+    const container = panoramaRef.current
 
-    const timer = window.setTimeout(() => {
-      setScanning(false)
-      setIdentified(true)
-    }, 2200)
+    if (!container) return 0
 
-    return () => window.clearTimeout(timer)
-  }, [scanning])
+    return container.clientWidth * 1.2
+  }
 
-  // ---------------------------------------------------
-  // OPEN QUADRANGLE EXPERIENCE
-  // ---------------------------------------------------
+  function clampPanorama(value: number) {
+    return Math.max(
+      0,
+      Math.min(value, getPanoramaMax())
+    )
+  }
 
-  async function openExplore() {
-    setExploring(true)
+  function startPanoramaDrag(
+    event: ReactPointerEvent<HTMLDivElement>
+  ) {
+    dragStartX.current = event.clientX
+    dragStartOffset.current = panoramaOffset
 
-    try {
-      const recentComments = await getRecentComments('quadrangle')
+    setPanoramaDragging(true)
 
-      const commentsWithLikes = (recentComments as Comment[]).map(
-        (comment, index) => ({
-          ...comment,
+    event.currentTarget.setPointerCapture(
+      event.pointerId
+    )
+  }
 
-          // Temporary demo likes.
-          // Later these can come directly from Supabase.
-          likes: comment.likes ?? Math.max(2, 15 - index * 4),
-        })
+  function movePanorama(
+    event: ReactPointerEvent<HTMLDivElement>
+  ) {
+    if (!panoramaDragging) return
+
+    const movement =
+      event.clientX - dragStartX.current
+
+    setPanoramaOffset(
+      clampPanorama(
+        dragStartOffset.current - movement
       )
+    )
+  }
 
-      setComments(commentsWithLikes)
-    } catch (error) {
-      console.error('Could not load comments:', error)
+  function endPanoramaDrag(
+    event: ReactPointerEvent<HTMLDivElement>
+  ) {
+    setPanoramaDragging(false)
+
+    if (
+      event.currentTarget.hasPointerCapture(
+        event.pointerId
+      )
+    ) {
+      event.currentTarget.releasePointerCapture(
+        event.pointerId
+      )
     }
   }
 
-  // ---------------------------------------------------
-  // LIKE COMMENT
-  // ---------------------------------------------------
+  useEffect(() => {
+    if (!exploring) return
+
+    function centrePanorama() {
+      setPanoramaOffset(
+        getPanoramaMax() / 2
+      )
+    }
+
+    const timer = window.setTimeout(
+      centrePanorama,
+      80
+    )
+
+    window.addEventListener(
+      'resize',
+      centrePanorama
+    )
+
+    return () => {
+      window.clearTimeout(timer)
+
+      window.removeEventListener(
+        'resize',
+        centrePanorama
+      )
+    }
+  }, [exploring])
+
+  // ===================================================
+  // OPEN PLACE
+  // ===================================================
+
+  async function openExplore() {
+    if (!detectedBuilding) return
+
+    setExploring(true)
+
+    try {
+      const recentComments =
+        await getRecentComments('quadrangle')
+
+      const commentsWithLikes =
+        (recentComments as Comment[]).map(
+          (comment, index) => ({
+            ...comment,
+
+            likes:
+              comment.likes ??
+              Math.max(2, 15 - index * 4),
+          })
+        )
+
+      setComments(commentsWithLikes)
+    } catch (error) {
+      console.error(
+        'Could not load comments:',
+        error
+      )
+    }
+  }
+
+  // ===================================================
+  // LIKES
+  // ===================================================
 
   function likeComment(commentId: number) {
-    const alreadyLiked = likedIds.includes(commentId)
+    const alreadyLiked =
+      likedIds.includes(commentId)
 
     setComments((currentComments) =>
       currentComments.map((comment) => {
-        if (comment.id !== commentId) return comment
+        if (comment.id !== commentId) {
+          return comment
+        }
 
         return {
           ...comment,
+
           likes: Math.max(
             0,
-            (comment.likes ?? 0) + (alreadyLiked ? -1 : 1)
+            (comment.likes ?? 0) +
+              (alreadyLiked ? -1 : 1)
           ),
         }
       })
@@ -124,24 +419,31 @@ function App() {
     )
   }
 
-  // ---------------------------------------------------
-  // CONNECTION REQUEST
-  // ---------------------------------------------------
+  // ===================================================
+  // CONNECTION
+  // ===================================================
 
   async function connect(commentId: number) {
     try {
-      await sendConnectionRequest(commentId, 'Time Lens User')
+      await sendConnectionRequest(
+        commentId,
+        'Time Lens User'
+      )
+
       setConnectedId(commentId)
     } catch (error) {
-      console.error('Could not connect:', error)
+      console.error(
+        'Could not connect:',
+        error
+      )
     }
   }
 
-  // ---------------------------------------------------
+  // ===================================================
   // RESET
-  // ---------------------------------------------------
+  // ===================================================
 
-  function resetUpload() {
+  function resetScan() {
     if (imageUrl) {
       URL.revokeObjectURL(imageUrl)
     }
@@ -151,42 +453,59 @@ function App() {
 
     setScanning(false)
     setIdentified(false)
-    setExploring(false)
+    setDetectedBuilding(null)
 
+    setDistanceAway(null)
+    setGpsAccuracy(null)
+
+    setLocationError('')
+
+    setExploring(false)
     setStoriesOpen(false)
+
     setConnectedId(null)
     setLikedIds([])
+
+    setPanoramaOffset(0)
   }
 
-  // Highest liked comments automatically move to top.
   const sortedComments = [...comments].sort(
-    (a, b) => (b.likes ?? 0) - (a.likes ?? 0)
+    (a, b) =>
+      (b.likes ?? 0) - (a.likes ?? 0)
   )
 
   // ===================================================
   // EXPLORE SCREEN
   // ===================================================
 
-  if (exploring && imageUrl) {
+  if (exploring && detectedBuilding) {
+    const isQuadrangle =
+      detectedBuilding.id === 'quadrangle'
+
     return (
       <main className="page-background">
         <div className="mobile-app">
-          {/* TOP BAR */}
 
           <nav className="top-bar">
+
             <button
               className="back-icon"
-              onClick={() => setExploring(false)}
-              aria-label="Go back"
+              onClick={() =>
+                setExploring(false)
+              }
             >
               ←
             </button>
 
-            <span className="brand">TIME LENS</span>
+            <span className="brand">
+              TIME LENS
+            </span>
 
             <button
               className="stories-top-button"
-              onClick={() => setStoriesOpen(true)}
+              onClick={() =>
+                setStoriesOpen(true)
+              }
             >
               Stories
 
@@ -196,79 +515,148 @@ function App() {
                 </span>
               )}
             </button>
+
           </nav>
 
-          {/* TITLE */}
-
           <header className="location-header">
+
             <span className="location-eyebrow">
               UNIVERSITY OF SYDNEY
             </span>
 
-            <h1>The Quadrangle</h1>
+            <h1>
+              {detectedBuilding.name}
+            </h1>
 
-            <p>Camperdown · Sydney</p>
+            <p>
+              {detectedBuilding.meta}
+            </p>
+
           </header>
 
-          {/* AR IMAGE */}
+          {isQuadrangle ? (
+            <section className="ar-scene">
 
-          <section className="ar-scene">
-            <img
-              className="quadrangle-image"
-              src={imageUrl}
-              alt="The Quadrangle"
-            />
+              {/* PANNABLE HISTORICAL IMAGE */}
 
-            <div className="scene-gradient" />
-
-            {/* EDMUND BLACKET HOLOGRAM */}
-
-            <button
-              className="hologram-button"
-              onClick={() =>
-                setShowHologramInfo(!showHologramInfo)
-              }
-              aria-label="View Edmund Blacket information"
-            >
-              <img
-                className="blacket-hologram"
-                src="/edmund-blacket.png"
-                alt="Edmund Thomas Blacket"
-              />
-
-              <div className="hologram-base">
-                <span />
-                <span />
-                <span />
+              <div
+                ref={panoramaRef}
+                className={`past-panorama ${
+                  panoramaDragging
+                    ? 'dragging'
+                    : ''
+                }`}
+                onPointerDown={
+                  startPanoramaDrag
+                }
+                onPointerMove={
+                  movePanorama
+                }
+                onPointerUp={
+                  endPanoramaDrag
+                }
+                onPointerCancel={
+                  endPanoramaDrag
+                }
+              >
+                <img
+                  src="/quadrangle-past-panorama.jpg"
+                  alt="Historical Quadrangle"
+                  draggable={false}
+                  style={{
+                    transform:
+                      `translateX(-${panoramaOffset}px)`,
+                  }}
+                />
               </div>
-            </button>
 
-            {/* HOLOGRAM INFO */}
+              <div className="scene-gradient" />
 
-            {showHologramInfo && (
-              <div className="hologram-card">
-                <span className="hologram-date">1850s</span>
+              {/* TEAMMATE MOVING HOLOGRAM */}
 
-                <h2>Edmund Blacket</h2>
+              <button
+                className="moving-hologram"
+                onClick={() =>
+                  setShowHologramInfo(
+                    !showHologramInfo
+                  )
+                }
+                aria-label="Edmund Blacket hologram"
+              >
+
+                <div className="walk-cycle" />
+
+                <img
+                  className="inspect-plan-state"
+                  src="/assets/holograms/edmund-blacket/inspect-plan.png"
+                  alt=""
+                  draggable={false}
+                />
+
+                <div className="moving-hologram-base">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+
+              </button>
+
+              {/* INFORMATION CARD */}
+
+              {showHologramInfo && (
+                <div className="hologram-card">
+
+                  <span className="hologram-date">
+                    c. 1857
+                  </span>
+
+                  <h2>
+                    Edmund Blacket
+                  </h2>
+
+                  <p>
+                    Architect of the University's
+                    original Great Hall and East
+                    Range, imagined inspecting the
+                    sandstone construction.
+                  </p>
+
+                  <div className="hologram-line" />
+
+                </div>
+              )}
+
+              <div className="pan-hint">
+                <span>←</span>
 
                 <p>
-                  Architect behind the University's earliest
-                  permanent buildings.
+                  Drag to explore the past
                 </p>
 
-                <div className="hologram-line" />
+                <span>→</span>
               </div>
-            )}
 
-            <div className="tap-message">
-              <span>⌃</span>
-              <p>Tap the hologram to learn more</p>
-            </div>
-          </section>
+            </section>
+          ) : (
+            <section className="generic-location-view">
 
-          {/* HISTORY */}
+              <div className="location-pin">
+                ◎
+              </div>
+
+              <p>
+                LOCATION CONFIRMED
+              </p>
+
+              <h2>
+                {detectedBuilding.name}
+              </h2>
+
+            </section>
+          )}
 
           <section className="history-section">
+
             <p className="section-eyebrow">
               ABOUT THIS PLACE
             </p>
@@ -278,291 +666,450 @@ function App() {
             </h2>
 
             <p className="history-copy">
-              The Quadrangle is one of Australia's most iconic
-              university spaces. Built from the 1850s, it has
-              been at the heart of learning, ceremonies and
-              university life for generations.
+              {detectedBuilding.history}
             </p>
 
-            {/* TIMELINE */}
+            {isQuadrangle && (
+              <>
+                <div className="timeline">
 
-            <div className="timeline">
-              <div className="timeline-track" />
+                  <div className="timeline-track" />
 
-              <div className="timeline-point selected">
-                <span className="timeline-circle" />
-                <strong>1850s</strong>
-                <small>Construction</small>
-              </div>
+                  <div className="timeline-point selected">
+                    <span className="timeline-circle" />
+                    <strong>1850s</strong>
+                    <small>Construction</small>
+                  </div>
 
-              <div className="timeline-point">
-                <span className="timeline-circle" />
-                <strong>1859</strong>
-                <small>Great Hall</small>
-              </div>
+                  <div className="timeline-point">
+                    <span className="timeline-circle" />
+                    <strong>1859</strong>
+                    <small>Great Hall</small>
+                  </div>
 
-              <div className="timeline-point">
-                <span className="timeline-circle" />
-                <strong>1881</strong>
-                <small>Women admitted</small>
-              </div>
+                  <div className="timeline-point">
+                    <span className="timeline-circle" />
+                    <strong>1881</strong>
+                    <small>Women admitted</small>
+                  </div>
 
-              <div className="timeline-point">
-                <span className="timeline-circle" />
-                <strong>Today</strong>
-                <small>Living landmark</small>
-              </div>
-            </div>
+                  <div className="timeline-point">
+                    <span className="timeline-circle" />
+                    <strong>Today</strong>
+                    <small>Living landmark</small>
+                  </div>
 
-            <button
-              className="view-stories-button"
-              onClick={() => setStoriesOpen(true)}
-            >
-              View stories from here
-            </button>
+                </div>
+
+                <button
+                  className="view-stories-button"
+                  onClick={() =>
+                    setStoriesOpen(true)
+                  }
+                >
+                  View stories from here
+                </button>
+              </>
+            )}
+
           </section>
 
-          {/* COMMENTS BACKDROP */}
+          {/* COMMENTS */}
 
           <div
             className={`comments-backdrop ${
-              storiesOpen ? 'backdrop-visible' : ''
+              storiesOpen
+                ? 'backdrop-visible'
+                : ''
             }`}
-            onClick={() => setStoriesOpen(false)}
+            onClick={() =>
+              setStoriesOpen(false)
+            }
           />
-
-          {/* INSTAGRAM STYLE COMMENTS */}
 
           <aside
             className={`comments-sheet ${
-              storiesOpen ? 'comments-sheet-open' : ''
+              storiesOpen
+                ? 'comments-sheet-open'
+                : ''
             }`}
           >
+
             <div className="sheet-handle" />
 
             <div className="comments-header">
+
               <div>
-                <p>LAST 2 HOURS</p>
-                <h2>Stories</h2>
+                <p>
+                  LAST 2 HOURS
+                </p>
+
+                <h2>
+                  Stories
+                </h2>
               </div>
 
               <button
                 className="close-comments"
-                onClick={() => setStoriesOpen(false)}
-                aria-label="Close comments"
+                onClick={() =>
+                  setStoriesOpen(false)
+                }
               >
                 ×
               </button>
+
             </div>
 
             <p className="comments-subtitle">
-              See what this place means to people here right now.
+              See what this place means to
+              people here right now.
             </p>
 
             <div className="comments-list">
+
               {sortedComments.length === 0 ? (
                 <div className="empty-state">
-                  <p>No recent stories yet.</p>
+
+                  <p>
+                    No recent stories yet.
+                  </p>
+
                   <span>
-                    Be the first person to share a memory.
+                    Be the first person to
+                    share a memory.
                   </span>
+
                 </div>
               ) : (
-                sortedComments.map((comment, index) => {
-                  const name =
-                    comment.name ||
-                    comment.author ||
-                    comment.username ||
-                    'Anonymous'
+                sortedComments.map(
+                  (comment, index) => {
+                    const name =
+                      comment.name ||
+                      comment.author ||
+                      comment.username ||
+                      'Anonymous'
 
-                  const story =
-                    comment.comment ||
-                    comment.content ||
-                    comment.text ||
-                    'Shared a memory from the Quadrangle.'
+                    const story =
+                      comment.comment ||
+                      comment.content ||
+                      comment.text ||
+                      'Shared a memory from this place.'
 
-                  const liked = likedIds.includes(comment.id)
+                    const liked =
+                      likedIds.includes(
+                        comment.id
+                      )
 
-                  return (
-                    <article
-                      className="instagram-comment"
-                      key={comment.id}
-                    >
-                      <div className="comment-avatar">
-                        {name.charAt(0).toUpperCase()}
-                      </div>
-
-                      <div className="comment-main">
-                        {index === 0 &&
-                          (comment.likes ?? 0) > 0 && (
-                            <span className="top-comment">
-                              TOP STORY
-                            </span>
-                          )}
-
-                        <p className="comment-body">
-                          <strong>{name}</strong>{' '}
-                          {story}
-                        </p>
-
-                        <div className="comment-meta">
-                          <span>Recently</span>
-
-                          <span>
-                            {comment.likes ?? 0}{' '}
-                            {(comment.likes ?? 0) === 1
-                              ? 'like'
-                              : 'likes'}
-                          </span>
-
-                          <button
-                            onClick={() =>
-                              connect(comment.id)
-                            }
-                            disabled={
-                              connectedId === comment.id
-                            }
-                          >
-                            {connectedId === comment.id
-                              ? 'Requested'
-                              : 'Connect'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        className={`heart-button ${
-                          liked ? 'heart-liked' : ''
-                        }`}
-                        onClick={() =>
-                          likeComment(comment.id)
-                        }
-                        aria-label="Like story"
+                    return (
+                      <article
+                        className="instagram-comment"
+                        key={comment.id}
                       >
-                        {liked ? '♥' : '♡'}
-                      </button>
-                    </article>
-                  )
-                })
+
+                        <div className="comment-avatar">
+                          {name
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
+
+                        <div className="comment-main">
+
+                          {index === 0 &&
+                            (comment.likes ?? 0) >
+                              0 && (
+                              <span className="top-comment">
+                                TOP STORY
+                              </span>
+                            )}
+
+                          <p className="comment-body">
+
+                            <strong>
+                              {name}
+                            </strong>{' '}
+
+                            {story}
+
+                          </p>
+
+                          <div className="comment-meta">
+
+                            <span>
+                              Recently
+                            </span>
+
+                            <span>
+                              {comment.likes ?? 0}{' '}
+                              {(comment.likes ?? 0) === 1
+                                ? 'like'
+                                : 'likes'}
+                            </span>
+
+                            <button
+                              onClick={() =>
+                                connect(
+                                  comment.id
+                                )
+                              }
+                              disabled={
+                                connectedId ===
+                                comment.id
+                              }
+                            >
+                              {connectedId ===
+                              comment.id
+                                ? 'Requested'
+                                : 'Connect'}
+                            </button>
+
+                          </div>
+
+                        </div>
+
+                        <button
+                          className={`heart-button ${
+                            liked
+                              ? 'heart-liked'
+                              : ''
+                          }`}
+                          onClick={() =>
+                            likeComment(
+                              comment.id
+                            )
+                          }
+                        >
+                          {liked ? '♥' : '♡'}
+                        </button>
+
+                      </article>
+                    )
+                  }
+                )
               )}
+
             </div>
+
           </aside>
+
         </div>
       </main>
     )
   }
 
   // ===================================================
-  // LANDING / SCANNING SCREEN
+  // HOME / GPS
   // ===================================================
+
+  const scanStarted =
+    scanning ||
+    identified ||
+    Boolean(locationError)
 
   return (
     <main className="page-background">
+
       <div className="mobile-app landing-container">
-        {!imageUrl ? (
+
+        {!scanStarted ? (
           <section className="landing-screen">
+
             <p className="brand landing-brand">
               TIME LENS
             </p>
 
             <h1>
-              Discover the stories hidden around you.
+              Discover the stories hidden
+              around you.
             </h1>
 
             <p className="landing-subtitle">
-              Scan a place to uncover its history and connect
-              with people experiencing it today.
+              Use your location to discover
+              the history and stories of the
+              place around you.
             </p>
 
             <div className="landing-buttons">
-              <button className="primary-button">
-                Scan with Camera
+
+              <button
+                className="primary-button"
+                onClick={scanLocation}
+              >
+                ◎ Scan My Location
               </button>
 
               <label className="secondary-button">
-                Upload Photo
+
+                Upload Photo + Locate Me
 
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleFileChange}
+                  onChange={
+                    handleFileChange
+                  }
                   hidden
                 />
+
               </label>
+
             </div>
+
           </section>
         ) : (
           <section className="scan-screen">
+
             <p className="brand scan-brand">
               TIME LENS
             </p>
 
             {scanning && (
-              <header className="scan-heading">
-                <h1>Analysing landmark...</h1>
+              <>
+                <header className="scan-heading">
 
-                <p>
-                  Searching for stories hidden in this place.
-                </p>
-              </header>
+                  <h1>
+                    Finding your location...
+                  </h1>
+
+                  <p>
+                    Comparing your position
+                    with nearby campus landmarks.
+                  </p>
+
+                </header>
+
+                <div className="gps-scanner">
+
+                  <div className="gps-ring ring-one" />
+                  <div className="gps-ring ring-two" />
+                  <div className="gps-ring ring-three" />
+
+                  <div className="gps-dot">
+                    ◎
+                  </div>
+
+                  <span>
+                    SEARCHING
+                  </span>
+
+                </div>
+              </>
             )}
 
-            {identified && (
-              <header className="scan-heading">
-                <span className="identified-text">
-                  ✓ LANDMARK IDENTIFIED
-                </span>
+            {identified &&
+              detectedBuilding && (
+                <>
 
-                <h1>The Quadrangle</h1>
+                  <header className="scan-heading">
+
+                    <span className="identified-text">
+                      ✓ LOCATION IDENTIFIED
+                    </span>
+
+                    <h1>
+                      {detectedBuilding.name}
+                    </h1>
+
+                    <p>
+                      {detectedBuilding.meta}
+                    </p>
+
+                  </header>
+
+                  {imageUrl ? (
+                    <div className="scan-image-container">
+
+                      <img
+                        src={imageUrl}
+                        alt={
+                          selectedFile?.name ||
+                          'Uploaded place'
+                        }
+                      />
+
+                      <span className="landmark-label">
+                        {detectedBuilding.name.toUpperCase()}
+                      </span>
+
+                    </div>
+                  ) : (
+                    <div className="location-result-card">
+
+                      <div className="location-result-icon">
+                        ◎
+                      </div>
+
+                      <p>
+                        GPS MATCH
+                      </p>
+
+                      <h2>
+                        {detectedBuilding.name}
+                      </h2>
+
+                      {distanceAway !== null && (
+                        <span>
+                          About{' '}
+                          {Math.round(
+                            distanceAway
+                          )}{' '}
+                          m away
+                        </span>
+                      )}
+
+                      {gpsAccuracy !== null && (
+                        <small>
+                          GPS accuracy ±
+                          {Math.round(
+                            gpsAccuracy
+                          )}
+                          m
+                        </small>
+                      )}
+
+                    </div>
+                  )}
+
+                  <button
+                    className="primary-button explore-button"
+                    onClick={openExplore}
+                  >
+                    Explore this place →
+                  </button>
+
+                </>
+              )}
+
+            {locationError && (
+              <div className="location-error-card">
+
+                <strong>
+                  Location not found
+                </strong>
 
                 <p>
-                  University of Sydney · Camperdown
+                  {locationError}
                 </p>
-              </header>
-            )}
 
-            <div className="scan-image-container">
-              <img
-                src={imageUrl}
-                alt={
-                  selectedFile?.name ||
-                  'Uploaded landmark'
-                }
-              />
+                <button
+                  className="primary-button"
+                  onClick={scanLocation}
+                >
+                  Try Again
+                </button>
 
-              {scanning && (
-                <div className="scan-line" />
-              )}
-
-              <span className="corner corner-tl" />
-              <span className="corner corner-tr" />
-              <span className="corner corner-bl" />
-              <span className="corner corner-br" />
-
-              {identified && (
-                <span className="landmark-label">
-                  THE QUADRANGLE
-                </span>
-              )}
-            </div>
-
-            {identified && (
-              <button
-                className="primary-button explore-button"
-                onClick={openExplore}
-              >
-                Explore this place →
-              </button>
+              </div>
             )}
 
             <button
               className="reset-button"
-              onClick={resetUpload}
+              onClick={resetScan}
             >
-              ← Choose another photo
+              ← Back
             </button>
+
           </section>
         )}
+
       </div>
     </main>
   )
