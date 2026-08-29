@@ -2,7 +2,7 @@
    UNDERTOW — prototype
    Mock "recognition" + comment data stand in for a real vision
    API + backend. Swap MOCK_BUILDINGS / recognizeBuilding() for
-   real calls when ready (see README).
+   real calls when ready (see README). test
    ============================================================ */
 
 const MOCK_BUILDINGS = [
