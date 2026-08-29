@@ -195,14 +195,17 @@ const $ = (id) => document.getElementById(id);
 
 /* ---------------- PAST PANORAMA (Quadrangle only) ---------------- */
 const PANORAMA_BUILDING_ID = "quadrangle";
-const PANORAMA_IMG_WIDTH_RATIO = 2.2; // must match .past-panorama img width in style.css
 const PANORAMA_ORIENTATION_HALF_RANGE_DEG = 60; // turning 60° either way pans to the edge
+const PANORAMA_TILT_HALF_RANGE_DEG = 30;
 
-let panoramaOffset = 0;
-let panoramaMax = 0;
+let panoramaOffsetX = 0;
+let panoramaOffsetY = 0;
+let panoramaMaxX = 0;
+let panoramaMaxY = 0;
 let panoramaBaseAlpha = null;
+let panoramaBaseBeta = null;
 let panoramaOrientationAttached = false;
-const canvasDrag = { active: false, moved: false, startX: 0, lastX: 0 };
+const canvasDrag = { active: false, moved: false, startX: 0, startY: 0, lastX: 0, lastY: 0 };
 
 function isQuadranglePast(){
   return state.era === "past" && !!state.building && state.building.id === PANORAMA_BUILDING_ID;
@@ -210,26 +213,30 @@ function isQuadranglePast(){
 
 function updatePanoramaTransform(){
   const img = $("past-panorama-img");
-  if(img) img.style.transform = `translateX(${-panoramaOffset}px)`;
+  if(img) img.style.transform = `translate(${-panoramaOffsetX}px, ${-panoramaOffsetY}px)`;
 }
 
 function recalcPanoramaBounds(){
   const container = $("past-panorama");
-  if(!container) return;
-  const containerWidth = container.clientWidth || 1;
-  panoramaMax = Math.max(0, containerWidth * (PANORAMA_IMG_WIDTH_RATIO - 1));
-  panoramaOffset = Math.min(Math.max(panoramaOffset, 0), panoramaMax);
+  const img = $("past-panorama-img");
+  if(!container || !img) return;
+  panoramaMaxX = Math.max(0, img.offsetWidth - container.clientWidth);
+  panoramaMaxY = Math.max(0, img.offsetHeight - container.clientHeight);
+  panoramaOffsetX = Math.min(Math.max(panoramaOffsetX, 0), panoramaMaxX);
+  panoramaOffsetY = Math.min(Math.max(panoramaOffsetY, 0), panoramaMaxY);
   updatePanoramaTransform();
 }
 
-function setPanoramaOffset(px){
-  panoramaOffset = Math.min(Math.max(px, 0), panoramaMax);
+function setPanoramaOffset(x, y = panoramaOffsetY){
+  panoramaOffsetX = Math.min(Math.max(x, 0), panoramaMaxX);
+  panoramaOffsetY = Math.min(Math.max(y, 0), panoramaMaxY);
   updatePanoramaTransform();
 }
 
 function onDeviceOrientation(e){
-  if(e.alpha == null || !panoramaMax) return;
+  if(e.alpha == null) return;
   if(panoramaBaseAlpha === null) panoramaBaseAlpha = e.alpha;
+  if(panoramaBaseBeta === null && e.beta != null) panoramaBaseBeta = e.beta;
   let delta = e.alpha - panoramaBaseAlpha;
   if(delta > 180) delta -= 360;
   if(delta < -180) delta += 360;
@@ -237,8 +244,13 @@ function onDeviceOrientation(e){
   // turning left), but turning left should reveal the image's own left
   // side (lower offset) — so invert delta to match that expectation.
   const span = PANORAMA_ORIENTATION_HALF_RANGE_DEG * 2;
-  const ratio = Math.min(Math.max((-delta + PANORAMA_ORIENTATION_HALF_RANGE_DEG) / span, 0), 1);
-  setPanoramaOffset(ratio * panoramaMax);
+  const xRatio = Math.min(Math.max((-delta + PANORAMA_ORIENTATION_HALF_RANGE_DEG) / span, 0), 1);
+  let yRatio = 0.5;
+  if(e.beta != null && panoramaBaseBeta !== null){
+    const tilt = e.beta - panoramaBaseBeta;
+    yRatio = Math.min(Math.max((tilt + PANORAMA_TILT_HALF_RANGE_DEG) / (PANORAMA_TILT_HALF_RANGE_DEG * 2), 0), 1);
+  }
+  setPanoramaOffset(xRatio * panoramaMaxX, yRatio * panoramaMaxY);
 }
 
 async function enablePanoramaOrientation(){
@@ -250,6 +262,7 @@ async function enablePanoramaOrientation(){
     }catch(e){ return; }
   }
   panoramaBaseAlpha = null;
+  panoramaBaseBeta = null;
   window.addEventListener("deviceorientation", onDeviceOrientation);
   panoramaOrientationAttached = true;
 }
@@ -266,11 +279,19 @@ function activatePanorama(){
   if(!container) return;
   container.classList.remove("hidden");
   recalcPanoramaBounds();
-  panoramaOffset = panoramaMax / 2;
+  panoramaOffsetX = panoramaMaxX / 2;
+  panoramaOffsetY = panoramaMaxY / 2;
   updatePanoramaTransform();
+  const img = $("past-panorama-img");
+  if(img && !img.complete){
+    img.addEventListener("load", () => {
+      recalcPanoramaBounds();
+      setPanoramaOffset(panoramaMaxX / 2, panoramaMaxY / 2);
+    }, { once:true });
+  }
   enablePanoramaOrientation();
   const hint = $("stage-hint");
-  if(hint) hint.textContent = "drag or turn your phone to look around the Past";
+  if(hint) hint.textContent = "drag in any direction or turn your phone to look around the Past";
 }
 
 function deactivatePanorama(){
@@ -544,6 +565,14 @@ const API_BASE = window.UNDERTOW_API_BASE || "";
 const PHOTO_CONFIDENCE_THRESHOLD = 0.75;
 const PHOTO_ONLY_CONFIDENCE_THRESHOLD = 0.85; // stricter bar when GPS gives us no corroboration at all
 const AMBIGUITY_MARGIN_METERS = 100;
+const AR_SCAN_INTERVAL_MS = 8000;
+const AR_NEARBY_RADIUS_METERS = 120;
+
+let arScanTimer = null;
+let arScanInFlight = false;
+let arDetectedBuilding = null;
+let arLatestFrame = null;
+let arDismissedUntil = 0;
 
 async function identifyBuildingFromPhoto(photoDataURL) {
   if (!photoDataURL) return null;
@@ -564,6 +593,69 @@ async function identifyBuildingFromPhoto(photoDataURL) {
   }
 }
 
+function captureARFrame(){
+  const video = $("video");
+  if(!video || !video.videoWidth) return null;
+  const canvas = $("capture-canvas");
+  const width = Math.min(640, video.videoWidth);
+  const height = Math.round(width * video.videoHeight / video.videoWidth);
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d").drawImage(video, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
+
+function showARDiscovery(building, frame){
+  if(!building || Date.now() < arDismissedUntil) return;
+  arDetectedBuilding = building;
+  arLatestFrame = frame || captureARFrame();
+  $("ar-discovery-name").textContent = building.name;
+  $("ar-discovery-meta").textContent = building.meta;
+  $("ar-discovery").classList.remove("hidden");
+  $("camera-hint").textContent = "building recognised";
+}
+
+async function scanForARDiscovery(){
+  if(arScanInFlight || !$("screen-capture").classList.contains("active") || !$("ar-discovery").classList.contains("hidden")) return;
+  const frame = captureARFrame();
+  if(!frame) return;
+  arScanInFlight = true;
+  try{
+    const result = await identifyBuildingFromPhoto(frame);
+    if(result && result.confidence >= PHOTO_CONFIDENCE_THRESHOLD){
+      const building = MOCK_BUILDINGS.find(candidate => candidate.id === result.id);
+      if(building) showARDiscovery(building, frame);
+    }
+  }finally{
+    arScanInFlight = false;
+  }
+}
+
+async function detectNearbyBuilding(){
+  try{
+    const position = await getCurrentPosition();
+    const nearby = MOCK_BUILDINGS
+      .map(building => ({ building, distance:getDistanceInMeters(position.coords.latitude, position.coords.longitude, building.lat, building.lng) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    if(nearby && nearby.distance <= AR_NEARBY_RADIUS_METERS) showARDiscovery(nearby.building, captureARFrame());
+  }catch(e){ /* Camera recognition still works when location is unavailable. */ }
+}
+
+function startARDiscovery(){
+  clearInterval(arScanTimer);
+  $("ar-discovery").classList.add("hidden");
+  $("camera-hint").textContent = "move your camera across a building";
+  setTimeout(scanForARDiscovery, 1200);
+  arScanTimer = setInterval(scanForARDiscovery, AR_SCAN_INTERVAL_MS);
+  detectNearbyBuilding();
+}
+
+function stopARDiscovery(){
+  clearInterval(arScanTimer);
+  arScanTimer = null;
+  arScanInFlight = false;
+}
+
 /* ---------------- CAMERA ---------------- */
 async function startCamera(){
   const errEl = $("camera-error");
@@ -574,6 +666,8 @@ async function startCamera(){
       video:{ facingMode: state.facingMode }, audio:false
     });
     $("video").srcObject = state.stream;
+    await $("video").play().catch(()=>{});
+    startARDiscovery();
   }catch(e){
     errEl.textContent = "camera unavailable (" + e.name + ") — use \"upload photo instead\" below.";
     errEl.classList.remove("hidden");
@@ -581,6 +675,7 @@ async function startCamera(){
 }
 
 function stopCamera(){
+  stopARDiscovery();
   if(state.stream){ state.stream.getTracks().forEach(t=>t.stop()); state.stream=null; }
 }
 
@@ -589,13 +684,17 @@ $("btn-flip").addEventListener("click", ()=>{
   startCamera();
 });
 
-$("btn-shutter").addEventListener("click", ()=>{
-  const video = $("video");
-  if(!video.videoWidth){ $("camera-error").textContent="camera not ready yet — try again in a second."; $("camera-error").classList.remove("hidden"); return; }
-  const c = $("capture-canvas");
-  c.width = video.videoWidth; c.height = video.videoHeight;
-  c.getContext("2d").drawImage(video,0,0);
-  onPhotoReady(c.toDataURL("image/jpeg", 0.9), true);
+$("btn-ar-dismiss").addEventListener("click", ()=>{
+  $("ar-discovery").classList.add("hidden");
+  $("camera-hint").textContent = "move your camera across a building";
+  arDismissedUntil = Date.now() + 20000;
+});
+
+$("btn-ar-explore").addEventListener("click", ()=>{
+  if(!arDetectedBuilding) return;
+  state.photoDataURL = arLatestFrame || captureARFrame();
+  state.isLive = true;
+  finishWithBuilding(arDetectedBuilding);
 });
 
 $("btn-upload").addEventListener("click", ()=> $("file-input").click());
@@ -614,6 +713,23 @@ function onPhotoReady(dataURL, isLive){
   if(!isLive) stopCamera();
   showScreen("screen-loading");
   runRecognition();
+}
+
+function finishWithBuilding(building){
+  stopARDiscovery();
+  $("ar-discovery").classList.add("hidden");
+  state.building = building;
+  state.comments = building.comments.map((comment, index) => ({
+    id: "c" + index + "_" + Date.now(),
+    ...comment,
+    photo: null,
+    ...assignCommentTiming(comment.era)
+  }));
+  state.comments.push(...getStoredComments(building.id));
+  state.selectedCommentId = null;
+  state.era = "present";
+  renderResult();
+  showScreen("screen-result");
 }
 
 /* ---------------- RECOGNITION (PHOTO AI + GPS SAFEGUARD METHOD) ---------------- */
@@ -643,18 +759,7 @@ async function runRecognition() {
   }
 
   function finishWith(building) {
-    state.building = building;
-    state.comments = building.comments.map((c, idx) => ({
-      id: "c" + idx + "_" + Date.now(),
-      ...c,
-      photo: null,
-      ...assignCommentTiming(c.era)
-    }));
-    state.comments.push(...getStoredComments(building.id));
-    state.selectedCommentId = null;
-    state.era = "present";
-    renderResult();
-    showScreen("screen-result");
+    finishWithBuilding(building);
   }
 
   try {
@@ -713,6 +818,7 @@ async function runRecognition() {
 
 /* ---------------- SCREEN NAV ---------------- */
 function showScreen(id){
+  if(id !== "screen-capture") stopARDiscovery();
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   $(id).classList.add("active");
   if(id === "screen-capture") startCamera();
@@ -1085,14 +1191,18 @@ canvas.addEventListener("pointerdown", (e)=>{
   canvasDrag.active = true;
   canvasDrag.moved = false;
   canvasDrag.startX = e.clientX;
+  canvasDrag.startY = e.clientY;
   canvasDrag.lastX = e.clientX;
+  canvasDrag.lastY = e.clientY;
 });
 canvas.addEventListener("pointermove", (e)=>{
   if(!canvasDrag.active) return;
   const dx = e.clientX - canvasDrag.lastX;
-  if(Math.abs(e.clientX - canvasDrag.startX) > 6) canvasDrag.moved = true;
-  if(isQuadranglePast()) setPanoramaOffset(panoramaOffset - dx);
+  const dy = e.clientY - canvasDrag.lastY;
+  if(Math.hypot(e.clientX - canvasDrag.startX, e.clientY - canvasDrag.startY) > 6) canvasDrag.moved = true;
+  if(isQuadranglePast()) setPanoramaOffset(panoramaOffsetX - dx, panoramaOffsetY - dy);
   canvasDrag.lastX = e.clientX;
+  canvasDrag.lastY = e.clientY;
 });
 canvas.addEventListener("pointerup", (e)=>{
   if(canvasDrag.active && !canvasDrag.moved) handleCanvasTap(e);

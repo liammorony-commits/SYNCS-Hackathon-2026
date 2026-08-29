@@ -128,13 +128,14 @@ body{
 .corner.br{bottom:0;right:0;border-left:none;border-top:none;}
 .camera-hint{
   position:absolute;
-  bottom:14px;
+  top:14px;
+  bottom:auto;
   left:0;right:0;
   text-align:center;
   font-family:var(--body);
   font-weight:600;
   font-size:11px;
-  color:var(--ink-dim);
+  color:rgba(255,255,255,0.82);
   letter-spacing:0.5px;
   margin:0;
 }
@@ -149,26 +150,63 @@ body{
 .capture-controls{
   display:flex;
   align-items:center;
-  justify-content:center;
-  gap:28px;
-  padding:22px 0 10px;
+  justify-content:space-between;
+  gap:16px;
+  padding:14px 0 4px;
 }
-.btn-shutter{
-  width:64px;height:64px;
-  border-radius:50%;
-  border:3px solid var(--present);
-  background:transparent;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-  padding:0;
+.ar-status{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:var(--ink-dim);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.7px;
+  text-transform:uppercase;
 }
-.btn-shutter span{
-  width:50px;height:50px;
+.ar-status-dot{
+  width:7px;height:7px;
   border-radius:50%;
-  background:var(--present);
+  background:#fff;
+  box-shadow:0 0 0 4px rgba(255,255,255,.12);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+.ar-discovery{
+  position:absolute;
+  z-index:4;
+  left:12px;right:12px;bottom:12px;
+  padding:15px;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:14px;
+  color:#fff;
+  background:rgba(10,10,10,.86);
+  box-shadow:0 14px 36px rgba(0,0,0,.38);
+  backdrop-filter:blur(14px);
+  animation:ar-card-in .24s ease-out;
+}
+.ar-discovery-kicker{
   display:block;
+  margin-bottom:4px;
+  color:rgba(255,255,255,.65);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:1px;
+  text-transform:uppercase;
 }
-.btn-shutter:active span{background:var(--present-dim);}
+.ar-discovery h2{margin:0 0 3px;font-size:18px;}
+.ar-discovery p{margin:0;color:rgba(255,255,255,.7);font-size:11px;}
+.ar-discovery-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px;}
+.ar-discovery .btn-small{color:#fff;background:transparent;border-color:rgba(255,255,255,.24);}
+.btn-ar-explore{
+  border:0;
+  border-radius:9px;
+  padding:8px 12px;
+  background:#fff;
+  color:#111;
+  font:700 11px var(--body);
+  cursor:pointer;
+}
+@keyframes ar-card-in{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 .btn-ghost{
   background:none;
   border:none;
@@ -342,10 +380,10 @@ body{
 .past-panorama img{
   position:absolute;
   top:0; left:0;
-  height:100%;
-  width:220%;
+  height:145%;
+  width:auto;
+  min-width:100%;
   max-width:none;
-  object-fit:cover;
   filter:brightness(0.65) saturate(0) contrast(1.15);
   will-change:transform;
 }
